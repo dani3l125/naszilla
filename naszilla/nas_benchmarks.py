@@ -4,6 +4,7 @@ import sys
 import os
 import threading
 import time
+import copy
 
 from sklearn_extra.cluster import KMedoids
 
@@ -442,18 +443,17 @@ class KNasbench201(Nasbench):
         self._points = None
         self._distances = None
         self._is_updated_points = False
-
-        print(self.points)
+        self._is_updated_distances = False
 
     @property
-    def points(self):
-        # TODO: add multithread and use triangle only
+    def distances(self):
+        if self._is_updated_distances:
+            return self._distances
+
         start = time.time()
-        size = int(100)
+        size = int(len(self.nasbench))
         batch = int(size / self.n_threads)
         last_batch = size % self.n_threads
-        if self._is_updated_points:
-            return self._points
         self._distances = np.zeros((size, size))
         values = np.zeros(size)
         threads = []
@@ -475,28 +475,27 @@ class KNasbench201(Nasbench):
         d_col = d_row.T
         self._distances = (d_row - d_col) ** 2
 
-        print(self._distances)
-        print(f'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! distances calculated in {time.time() - start}sec')
+        # print(f'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! distances calculated in {time.time() - start}sec')
 
+        self._is_updated_distances = True
         return self._distances
 
-        # for i, i_value in enumerate(values):
-        #     for j, j_value in enumerate(values[:i]):
-        #         self._distances[i, j] = self._distances[j, i] = np.abs((i_value - j_value) ** 2)
 
-        m_row = np.tile(self._distances[0] ** 2, (1, self._distances.shape[0]))
-        m_col = np.tile(self._distances.T[0] ** 2, (1, self._distances.shape[0])).T
-        M = (self._distances ** 2 + m_row + m_col) / 2
-
-
+    @property
+    def points(self):
+        if self._is_updated_points:
+            return self._points
+        # TODO: check tile dimentions order
+        m_row = np.tile(self.distances[0] ** 2, (1, self.distances.shape[0]))
+        m_col = np.tile(self.distances.T[0] ** 2, (1, self.distances.shape[0])).T
+        M = (self.distances ** 2 + m_row + m_col) / 2
 
         U, S, V = np.linalg.svd(M)
         X = U @ np.sqrt(S)
 
         self._is_updated_points = True
-
-        return X[:, :self.dim+1]
-
+        self._points = X[:, :self.dim + 1]
+        return self._points
 
     def get_type(self):
         return 'nasbench_201'
@@ -517,7 +516,11 @@ class KNasbench201(Nasbench):
         return Cell201(**arch).get_string()
 
     def prune(self, k=20):
-        kmedoids = KMedoids(n_clusters=k, metric ='precomputed').fit(self._distances)
+        def compute_medoids():
+            return KMedoids(n_clusters=k, metric='precomputed').fit(self._distances)
+        def copy_benchmark():
+            copy.deepcopy(self.nasbench)
+
 
     def choose_cluster(self, data):
         best_dict = min(data, key=lambda x:x['test_loss']) # there is val_loss also.
