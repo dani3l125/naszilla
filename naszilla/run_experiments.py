@@ -8,7 +8,7 @@ import numpy as np
 import copy
 
 from naszilla.params import *
-from naszilla.nas_benchmarks import Nasbench101, Nasbench201, Nasbench301
+from naszilla.nas_benchmarks import Nasbench101, Nasbench201, Nasbench301, KNasbench201
 from naszilla.nas_algorithms import run_nas_algorithm
 
 def run_experiments(args, save_dir):
@@ -30,10 +30,16 @@ def run_experiments(args, save_dir):
     mp = copy.deepcopy(metann_params)
 
     if ss == 'nasbench_101':
+        if args.k_alg:
+            print('K alg not supported yet!')
+            raise NotImplementedError()
         search_space = Nasbench101(mf=mf)
     elif ss == 'nasbench_201':
-        search_space = Nasbench201(dataset=dataset)
+        search_space = Nasbench201(dataset=dataset) if not args.k_alg else KNasbench201(dataset=dataset)
     elif ss == 'nasbench_301':
+        if args.k_alg:
+            print('K alg not supported yet!')
+            raise NotImplementedError()
         search_space = Nasbench301()
     else:
         print('Invalid search space')
@@ -49,7 +55,7 @@ def run_experiments(args, save_dir):
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
             starttime = time.time()
             # this line runs the nas algorithm and returns the result
-            result, val_result, run_datum = run_nas_algorithm(algorithm_params[j], search_space, mp)
+            result, val_result, run_datum = run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg)
 
             result = np.round(result, 5)
             val_result = np.round(val_result, 5)
@@ -115,7 +121,8 @@ if __name__ == "__main__":
     parser.add_argument('--algo_params', type=str, default='simple_algos', help='which parameters to use')
     parser.add_argument('--output_filename', type=str, default='round', help='name of output files')
     parser.add_argument('--save_dir', type=str, default='results_output', help='name of save directory')
-    parser.add_argument('--save_specs', type=bool, default=False, help='save the architecture specs')    
+    parser.add_argument('--save_specs', type=bool, default=False, help='save the architecture specs')
+    parser.add_argument('--k_alg', type=bool, default=False, help='use iterative k algorithm')
 
     args = parser.parse_args()
     main(args)

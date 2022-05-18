@@ -21,13 +21,15 @@ DEFAULT_TOTAL_QUERIES = 150
 DEFAULT_LOSS = 'val_loss'
 
 
-def run_nas_algorithm(algo_params, search_space, mp):
+def run_nas_algorithm(algo_params, search_space, mp, k_alg):
 
     # run nas algorithm
     ps = copy.deepcopy(algo_params)
     algo_name = ps.pop('algo_name')
 
-    if algo_name == 'random':
+    if k_alg:
+        data = knas(algo_params, search_space, mp)
+    elif algo_name == 'random':
         data = random_search(search_space, **ps)
     elif algo_name == 'evolution':
         data = evolution_search(search_space, **ps)
@@ -62,6 +64,47 @@ def run_nas_algorithm(algo_params, search_space, mp):
 
     result, val_result = compute_best_test_losses(data, ps['k'], ps['total_queries'], ps['loss'])
     return result, val_result, data
+
+
+def knas(algo_params, search_space, mp, iterations=10, k=100):
+    # run nas algorithm
+    ps = copy.deepcopy(algo_params)
+    #TODO: edit number of queries as init_num/iterations, k/iterations
+    algo_name = ps.pop('algo_name')
+    final_data = []
+
+    for i in range(iterations):
+        search_space.prune(k)
+
+        if algo_name == 'random':
+            data = random_search(search_space, **ps)
+        elif algo_name == 'evolution':
+            data = evolution_search(search_space, **ps)
+        elif algo_name == 'bananas':
+            data = bananas(search_space, mp, **ps, predictor='bananas')
+        elif algo_name == 'bonas':
+            data = bananas(search_space, mp, **ps, predictor='gcn', predictor_encoding='gcn')
+        elif algo_name == 'gp_bayesopt':
+            data = gp_bayesopt_search(search_space, **ps)
+        elif algo_name == 'dngo':
+            data = pybnn_search(search_space, model_type='dngo', **ps)
+        elif algo_name == 'bohamiann':
+            data = pybnn_search(search_space, model_type='bohamiann', **ps)
+        elif algo_name == 'local_search':
+            data = local_search(search_space, **ps)
+        elif algo_name == 'gcn_predictor':
+            data = gcn_predictor(search_space, **ps)
+        elif algo_name == 'vaenas':
+            # data = bananas(search_space, mp, **ps, predictor='vae', predictor_encoding='vae')
+            print('Currently not implemented')
+            raise NotImplementedError()
+        else:
+            print('Invalid algorithm name')
+            raise NotImplementedError()
+        final_data.append(data)
+        search_space.choose_cluster(data)
+
+    return final_data
 
 
 def compute_best_test_losses(data, k, total_queries, loss):
@@ -181,11 +224,11 @@ def bananas(search_space,
     """
     Bayesian optimization with a neural predictor
     """
-    data = search_space.generate_random_dataset(num=num_init, 
-                                                predictor_encoding=predictor_encoding, 
-                                                random_encoding=random_encoding,
-                                                deterministic_loss=deterministic,
-                                                cutoff=cutoff)
+    data = search_space.generate_k_means_dataset(num=num_init,
+                                                    predictor_encoding=predictor_encoding,
+                                                    random_encoding=random_encoding,
+                                                    deterministic_loss=deterministic,
+                                                    cutoff=cutoff)
 
     query = num_init + k
 

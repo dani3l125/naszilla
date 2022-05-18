@@ -2,6 +2,10 @@ import numpy as np
 import pickle
 import sys
 import os
+import threading
+import time
+
+from sklearn_extra.cluster import KMedoids
 
 from nasbench import api
 from nas_201_api import NASBench201API as API
@@ -90,6 +94,48 @@ class Nasbench:
         test for isomorphisms using a hash map of path indices
         use patience_factor to avoid infinite loops
         """
+        data = []
+        dic = {}
+        tries_left = num * patience_factor
+        while len(data) < num:
+            tries_left -= 1
+            if tries_left <= 0:
+                break
+
+            arch_dict = self.query_arch(train=train,
+                                        predictor_encoding=predictor_encoding,
+                                        random_encoding=random_encoding,
+                                        deterministic=deterministic_loss,
+                                        cutoff=cutoff,
+                                        max_edges=max_edges,
+                                        max_nodes=max_nodes)
+
+            h = self.get_hash(arch_dict['spec'])
+
+            if allow_isomorphisms or h not in dic:
+                dic[h] = 1
+                data.append(arch_dict)
+        return data
+
+    def generate_k_means_dataset(self,
+                                num=10,
+                                train=True,
+                                predictor_encoding=None,
+                                random_encoding='adj',
+                                deterministic_loss=True,
+                                patience_factor=5,
+                                allow_isomorphisms=False,
+                                cutoff=0,
+                                max_edges=None,
+                                max_nodes=None):
+        """
+        create a dataset of randomly sampled architectues
+        test for isomorphisms using a hash map of path indices
+        use patience_factor to avoid infinite loops
+        """
+        if not isinstance(self, Nasbench201):
+            raise Exception("Currently knas is supported only for NasBench201")
+
         data = []
         dic = {}
         tries_left = num * patience_factor
@@ -373,6 +419,108 @@ class Nasbench201(Nasbench):
     def get_hash(self, arch):
         # return a unique hash of the architecture+fidelity
         return Cell201(**arch).get_string()
+
+class KNasbench201(Nasbench):
+
+    def __init__(self,
+                 dataset='cifar10',
+                 data_folder=default_data_folder,
+                 version='1_0',
+                 dim=100,
+                 n_threads=1):
+        self.search_space = 'nasbench_201'
+        self.dataset = dataset
+        self.index_hash = None
+        self.dim = dim
+        self.n_threads = n_threads
+
+        if version == '1_0':
+            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+        elif version == '1_1':
+            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
+        
+        self._points = None
+        self._distances = None
+        self._is_updated_points = False
+
+        print(self.points)
+
+    @property
+    def points(self):
+        # TODO: add multithread and use triangle only
+        start = time.time()
+        size = int(100)
+        batch = int(size / self.n_threads)
+        last_batch = size % self.n_threads
+        if self._is_updated_points:
+            return self._points
+        self._distances = np.zeros((size, size))
+        values = np.zeros(size)
+        threads = []
+        def load_values(start, end):
+                for i in range(start, end):
+                    values[i] = self.nasbench.query_meta_info_by_index(i).get_metrics(self.dataset, 'train')['accuracy']
+
+        for t_idx in range(self.n_threads - 1):
+            t = threading.Thread(target=load_values, args=(batch * t_idx, batch * t_idx + batch))
+            t.start()
+            threads.append(t)
+        t = threading.Thread(target=load_values, args=(batch * (self.n_threads - 1), size))
+        t.start()
+        threads.append(t)
+        for t in threads:
+            t.join()
+
+        d_row = np.tile(values, (1, size))
+        d_col = d_row.T
+        self._distances = (d_row - d_col) ** 2
+
+        print(self._distances)
+        print(f'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! distances calculated in {time.time() - start}sec')
+
+        return self._distances
+
+        # for i, i_value in enumerate(values):
+        #     for j, j_value in enumerate(values[:i]):
+        #         self._distances[i, j] = self._distances[j, i] = np.abs((i_value - j_value) ** 2)
+
+        m_row = np.tile(self._distances[0] ** 2, (1, self._distances.shape[0]))
+        m_col = np.tile(self._distances.T[0] ** 2, (1, self._distances.shape[0])).T
+        M = (self._distances ** 2 + m_row + m_col) / 2
+
+
+
+        U, S, V = np.linalg.svd(M)
+        X = U @ np.sqrt(S)
+
+        self._is_updated_points = True
+
+        return X[:, :self.dim+1]
+
+
+    def get_type(self):
+        return 'nasbench_201'
+
+    @classmethod
+    def get_cell(cls, arch=None):
+        if not arch:
+            return Cell201
+        else:
+            return Cell201(**arch)
+
+    def get_nbhd(self, arch, mutate_encoding='adj'):
+        return Cell201(**arch).get_neighborhood(self.nasbench,
+                                                mutate_encoding=mutate_encoding)
+
+    def get_hash(self, arch):
+        # return a unique hash of the architecture+fidelity
+        return Cell201(**arch).get_string()
+
+    def prune(self, k=20):
+        kmedoids = KMedoids(n_clusters=k, metric ='precomputed').fit(self._distances)
+
+    def choose_cluster(self, data):
+        best_dict = min(data, key=lambda x:x['test_loss']) # there is val_loss also.
 
 class Nasbench301(Nasbench):
 
