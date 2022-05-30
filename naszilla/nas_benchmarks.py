@@ -5,8 +5,10 @@ import os
 import threading
 import time
 import copy
+import random
 
 from sklearn_extra.cluster import KMedoids
+from torch import load
 
 from nasbench import api
 from nas_201_api import NASBench201API as API
@@ -18,6 +20,7 @@ from naszilla.nas_bench_301.cell_301 import Cell301
 
 
 default_data_folder = '~/nas_benchmark_datasets/'
+is_debug = True
 
 
 class Nasbench:
@@ -78,6 +81,7 @@ class Nasbench:
                                             mutate_encoding=mutate_encoding,
                                             index_hash=self.index_hash,
                                             cutoff=cutoff)
+
 
     def generate_random_dataset(self,
                                 num=10, 
@@ -393,12 +397,15 @@ class Nasbench201(Nasbench):
     def __init__(self,
                  dataset='cifar10',
                  data_folder=default_data_folder,
-                 version='1_0'):
+                 version='1_0',
+                 ):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
 
-        if version == '1_0':
+        if is_debug:
+            self.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+        elif version == '1_0':
             self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
         elif version == '1_1':
             self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
@@ -410,40 +417,44 @@ class Nasbench201(Nasbench):
     def get_cell(cls, arch=None):
         if not arch:
             return Cell201
+        if isinstance(arch, str):
+            return Cell201(arch)
         else:
             return Cell201(**arch)
 
     def get_nbhd(self, arch, mutate_encoding='adj'):
-        return Cell201(**arch).get_neighborhood(self.nasbench, 
+        if isinstance(arch, str):
+            return Cell201(arch).get_neighborhood(self.nasbench,
+                                                mutate_encoding=mutate_encoding)
+        else:
+            return Cell201(**arch).get_neighborhood(self.nasbench,
                                                 mutate_encoding=mutate_encoding)
 
     def get_hash(self, arch):
         # return a unique hash of the architecture+fidelity
-        return Cell201(**arch).get_string()
+        if isinstance(arch, str):
+            return Cell201(arch).get_string()
+        else:
+            return Cell201(**arch).get_string()
 
-class KNasbench201(Nasbench):
+class KNasbench201(Nasbench201):
 
     def __init__(self,
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
                  dim=100,
-                 n_threads=1):
-        self.search_space = 'nasbench_201'
-        self.dataset = dataset
-        self.index_hash = None
+                 n_threads=2):
+        super().__init__(dataset, data_folder, version)
         self.dim = dim
         self.n_threads = n_threads
-
-        if version == '1_0':
-            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
-        elif version == '1_1':
-            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
+        self.old_nasbench = None
         
         self._points = None
         self._distances = None
         self._is_updated_points = False
         self._is_updated_distances = False
+        self._labels = np.zeros(len(self.nasbench))
 
     @property
     def distances(self):
@@ -451,7 +462,7 @@ class KNasbench201(Nasbench):
             return self._distances
 
         start = time.time()
-        size = int(len(self.nasbench))
+        size = int(100)
         batch = int(size / self.n_threads)
         last_batch = size % self.n_threads
         self._distances = np.zeros((size, size))
@@ -471,7 +482,7 @@ class KNasbench201(Nasbench):
         for t in threads:
             t.join()
 
-        d_row = np.tile(values, (1, size))
+        d_row = np.tile(values, (size, 1))
         d_col = d_row.T
         self._distances = (d_row - d_col) ** 2
 
@@ -498,32 +509,66 @@ class KNasbench201(Nasbench):
         return self._points
 
     def get_type(self):
-        return 'nasbench_201'
+        return 'knasbench_201'
 
-    @classmethod
-    def get_cell(cls, arch=None):
-        if not arch:
-            return Cell201
-        else:
-            return Cell201(**arch)
+    def copy_bench(self):
+        self.old_nasbench = copy.deepcopy(self.nasbench)
 
-    def get_nbhd(self, arch, mutate_encoding='adj'):
-        return Cell201(**arch).get_neighborhood(self.nasbench,
-                                                mutate_encoding=mutate_encoding)
+    def remove_by_indices(self, indices):
+        for idx in indices:
+            arch_str = self.old_nasbench.arch2infos_full[idx].arch_str
+            del self.nasbench.arch2infos_full[idx]
+            del self.nasbench.arch2infos_less[idx]
+            del self.nasbench.archstr2index[arch_str]
+            self.nasbench.evaluated_indexes.remove(idx)
+            self.nasbench.meta_archs.remove(arch_str)
 
-    def get_hash(self, arch):
-        # return a unique hash of the architecture+fidelity
-        return Cell201(**arch).get_string()
+    def parallel_remove(self, remove_indices):
+        threads = []
+        chunk_size = int(len(remove_indices) / (self.n_threads - 1))
+        first_idx = 0
+        last_idx = chunk_size
+        for i in range(self.n_threads - 1):
+            t = threading.Thread(target=self.remove_by_indices, args=([remove_indices[first_idx:last_idx]]))
+            t.start()
+            threads.append(t)
+            first_idx += chunk_size
+            last_idx += chunk_size
+        t = threading.Thread(target=self.remove_by_indices, args=([remove_indices[last_idx:]]))
+        t.start()
+        threads.append(t)
+
+        for t in threads:
+            t.join()
+
 
     def prune(self, k=20):
-        def compute_medoids():
-            return KMedoids(n_clusters=k, metric='precomputed').fit(self._distances)
-        def copy_benchmark():
-            copy.deepcopy(self.nasbench)
+        start = time.time()
+        copy_thread = threading.Thread(target=self.copy_bench)
+        copy_thread.start()
+        kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(self.distances)
+        self._labels = kmedoids.labels_
+        copy_thread.join()
+        remove_indices = list(set(range(len(self.nasbench))) - set(kmedoids.medoid_indices_))
+        self.parallel_remove(remove_indices)
 
+        print(f'Pruned!!!!!!!!!!!!!! total time: {time.time() - start}')
+        print(self.nasbench)
 
     def choose_cluster(self, data):
+        start = time.time()
+        self.nasbench = self.old_nasbench
+        copy_thread = threading.Thread(target=self.copy_bench)
+        copy_thread.start()
+
         best_dict = min(data, key=lambda x:x['test_loss']) # there is val_loss also.
+        best_str = best_dict['spec']
+        cluster_idx = self._labels[self.nasbench.archstr2index[best_str]]
+        cluster_elements = np.where(self._labels == cluster_idx)
+        remove_indices = list(set(range(len(self.nasbench))) - set(cluster_elements[0]))
+        self.parallel_remove(remove_indices)
+        print(f'Cluster updated!!!!!!!!!!!!!! total time: {time.time() - start}')
+
 
 class Nasbench301(Nasbench):
 

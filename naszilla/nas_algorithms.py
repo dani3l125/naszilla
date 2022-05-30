@@ -66,8 +66,9 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg):
     return result, val_result, data
 
 
-def knas(algo_params, search_space, mp, iterations=10, k=100):
+def knas(algo_params, search_space, mp, iterations=3, k=15):
     # run nas algorithm
+    algo_params['total_queries'] = int(algo_params['total_queries'] / iterations)
     ps = copy.deepcopy(algo_params)
     #TODO: edit number of queries as init_num/iterations, k/iterations
     algo_name = ps.pop('algo_name')
@@ -101,7 +102,7 @@ def knas(algo_params, search_space, mp, iterations=10, k=100):
         else:
             print('Invalid algorithm name')
             raise NotImplementedError()
-        final_data.append(data)
+        final_data.extend(data)
         search_space.choose_cluster(data)
 
     return final_data

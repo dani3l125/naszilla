@@ -122,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_filename', type=str, default='round', help='name of output files')
     parser.add_argument('--save_dir', type=str, default='results_output', help='name of save directory')
     parser.add_argument('--save_specs', type=bool, default=False, help='save the architecture specs')
-    parser.add_argument('--k_alg', type=bool, default=False, help='use iterative k algorithm')
+    parser.add_argument('--k_alg', type=int, default=0, help='use iterative k algorithm')
 
     args = parser.parse_args()
     main(args)

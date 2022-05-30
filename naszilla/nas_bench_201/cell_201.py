@@ -6,6 +6,7 @@ import sys
 import os
 import pickle
 import torch
+import random
 
 from naszilla.nas_bench_201.distances import *
 
@@ -40,6 +41,8 @@ class Cell201:
         """
         From the AutoDL-Projects repository
         """
+        if len(nasbench) != 15625: #  k-medoids
+            return random.choice(nasbench.meta_archs)
         ops = []
         for i in range(OP_SPOTS):
             op = random.choice(OPS)
