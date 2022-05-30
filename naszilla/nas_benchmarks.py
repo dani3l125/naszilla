@@ -20,7 +20,7 @@ from naszilla.nas_bench_301.cell_301 import Cell301
 
 
 default_data_folder = '~/nas_benchmark_datasets/'
-is_debug = True
+is_debug = False
 
 
 class Nasbench:
