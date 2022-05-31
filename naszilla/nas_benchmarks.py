@@ -462,7 +462,7 @@ class KNasbench201(Nasbench201):
             return self._distances
 
         start = time.time()
-        size = int(100)
+        size = len(self.nasbench)
         batch = int(size / self.n_threads)
         last_batch = size % self.n_threads
         self._distances = np.zeros((size, size))
