@@ -537,7 +537,9 @@ class KNasbench201(Nasbench201):
                 raise Exception('Distances are not updated properly.')
 
             # Choose nearest sample in new set every time
-            idx = cls.old_nasbench.archstr2index[arch]
+            idx = cls.old_nasbench.archstr2index[arch] if isinstance(arch, str) else cls.old_nasbench.archstr2index[arch['spec']]
+            if isinstance(arch, dict):
+                print(arch)
             candidates = cls._distances[idx][cls._medoid_indices]
             nearest_idx = np.argmin(candidates)
             arch = cls.old_nasbench.meta_archs[cls.old_nasbench.evaluated_indexes.index(idx)]
