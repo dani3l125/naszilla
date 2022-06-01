@@ -522,7 +522,7 @@ class KNasbench201(Nasbench201):
         best_dict = min(data, key=lambda x:x['test_loss']) # there is val_loss also.
         best_str = best_dict['spec']
         cluster_idx = self._labels[self.nasbench.archstr2index[best_str]]
-        cluster_elements = np.where(self._labels == cluster_idx)
+        cluster_elements = np.where(self._labels == cluster_idx)  # Indexes in list only!
         remove_indices = list(set(range(len(self.nasbench))) - set(cluster_elements[0]))
         self.parallel_remove(remove_indices)
         print(f'Cluster updated!!!!!!!!!!!!!! total time: {time.time() - start}')
