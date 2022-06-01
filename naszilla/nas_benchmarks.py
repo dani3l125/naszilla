@@ -20,7 +20,7 @@ from naszilla.nas_bench_301.cell_301 import Cell301
 
 
 default_data_folder = '~/nas_benchmark_datasets/'
-is_debug = False
+is_debug = True
 
 
 class Nasbench:
@@ -99,48 +99,6 @@ class Nasbench:
         test for isomorphisms using a hash map of path indices
         use patience_factor to avoid infinite loops
         """
-        data = []
-        dic = {}
-        tries_left = num * patience_factor
-        while len(data) < num:
-            tries_left -= 1
-            if tries_left <= 0:
-                break
-
-            arch_dict = self.query_arch(train=train,
-                                        predictor_encoding=predictor_encoding,
-                                        random_encoding=random_encoding,
-                                        deterministic=deterministic_loss,
-                                        cutoff=cutoff,
-                                        max_edges=max_edges,
-                                        max_nodes=max_nodes)
-
-            h = self.get_hash(arch_dict['spec'])
-
-            if allow_isomorphisms or h not in dic:
-                dic[h] = 1
-                data.append(arch_dict)
-        return data
-
-    def generate_k_means_dataset(self,
-                                num=10,
-                                train=True,
-                                predictor_encoding=None,
-                                random_encoding='adj',
-                                deterministic_loss=True,
-                                patience_factor=5,
-                                allow_isomorphisms=False,
-                                cutoff=0,
-                                max_edges=None,
-                                max_nodes=None):
-        """
-        create a dataset of randomly sampled architectues
-        test for isomorphisms using a hash map of path indices
-        use patience_factor to avoid infinite loops
-        """
-        if not isinstance(self, Nasbench201):
-            raise Exception("Currently knas is supported only for NasBench201")
-
         data = []
         dic = {}
         tries_left = num * patience_factor
@@ -393,7 +351,7 @@ class Nasbench101(Nasbench):
         
 
 class Nasbench201(Nasbench):
-
+    nasbench = None
     def __init__(self,
                  dataset='cifar10',
                  data_folder=default_data_folder,
@@ -404,11 +362,11 @@ class Nasbench201(Nasbench):
         self.index_hash = None
 
         if is_debug:
-            self.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+            Nasbench201.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
         elif version == '1_0':
-            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+            Nasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
         elif version == '1_1':
-            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
+            Nasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
 
     def get_type(self):
         return 'nasbench_201'
@@ -438,7 +396,10 @@ class Nasbench201(Nasbench):
             return Cell201(**arch).get_string()
 
 class KNasbench201(Nasbench201):
-
+    _is_updated_distances = False
+    _distances = None
+    _medoid_indices = None
+    old_nasbench = None
     def __init__(self,
                  dataset='cifar10',
                  data_folder=default_data_folder,
@@ -448,24 +409,19 @@ class KNasbench201(Nasbench201):
         super().__init__(dataset, data_folder, version)
         self.dim = dim
         self.n_threads = n_threads
-        self.old_nasbench = None
-        
-        self._points = None
-        self._distances = None
         self._is_updated_points = False
-        self._is_updated_distances = False
+        self._points = None
+
         self._labels = np.zeros(len(self.nasbench))
 
     @property
     def distances(self):
-        if self._is_updated_distances:
-            return self._distances
+        if KNasbench201._is_updated_distances:
+            return KNasbench201._distances
 
-        start = time.time()
         size = len(self.nasbench)
         batch = int(size / self.n_threads)
-        last_batch = size % self.n_threads
-        self._distances = np.zeros((size, size))
+        KNasbench201._distances = np.zeros((size, size))
         values = np.zeros(size)
         threads = []
         def load_values(start, end):
@@ -484,12 +440,12 @@ class KNasbench201(Nasbench201):
 
         d_row = np.tile(values, (size, 1))
         d_col = d_row.T
-        self._distances = (d_row - d_col) ** 2
+        KNasbench201._distances = (d_row - d_col) ** 2
 
         # print(f'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! distances calculated in {time.time() - start}sec')
 
-        self._is_updated_distances = True
-        return self._distances
+        KNasbench201._is_updated_distances = True
+        return KNasbench201._distances
 
 
     @property
@@ -512,16 +468,18 @@ class KNasbench201(Nasbench201):
         return 'knasbench_201'
 
     def copy_bench(self):
-        self.old_nasbench = copy.deepcopy(self.nasbench)
+        KNasbench201.old_nasbench = copy.deepcopy(self.nasbench)
 
     def remove_by_indices(self, indices):
+        print(indices)
         for idx in indices:
+            # a_idx = KNasbench201.nasbench.evaluated_indexes.index(idx)
             arch_str = self.old_nasbench.arch2infos_full[idx].arch_str
-            del self.nasbench.arch2infos_full[idx]
-            del self.nasbench.arch2infos_less[idx]
-            del self.nasbench.archstr2index[arch_str]
-            self.nasbench.evaluated_indexes.remove(idx)
-            self.nasbench.meta_archs.remove(arch_str)
+            del KNasbench201.nasbench.arch2infos_full[idx]
+            del KNasbench201.nasbench.arch2infos_less[idx]
+            del KNasbench201.nasbench.archstr2index[arch_str]
+            KNasbench201.nasbench.evaluated_indexes.remove(idx)
+            KNasbench201.nasbench.meta_archs.remove(arch_str)
 
     def parallel_remove(self, remove_indices):
         threads = []
@@ -534,9 +492,10 @@ class KNasbench201(Nasbench201):
             threads.append(t)
             first_idx += chunk_size
             last_idx += chunk_size
-        t = threading.Thread(target=self.remove_by_indices, args=([remove_indices[last_idx:]]))
-        t.start()
-        threads.append(t)
+        if last_idx >= len(remove_indices) - 1:
+            t = threading.Thread(target=self.remove_by_indices, args=([remove_indices[last_idx:]]))
+            t.start()
+            threads.append(t)
 
         for t in threads:
             t.join()
@@ -548,6 +507,7 @@ class KNasbench201(Nasbench201):
         copy_thread.start()
         kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(self.distances)
         self._labels = kmedoids.labels_
+        KNasbench201._medoid_indices = kmedoids.medoid_indices_
         copy_thread.join()
         remove_indices = list(set(range(len(self.nasbench))) - set(kmedoids.medoid_indices_))
         self.parallel_remove(remove_indices)
@@ -568,6 +528,26 @@ class KNasbench201(Nasbench201):
         remove_indices = list(set(range(len(self.nasbench))) - set(cluster_elements[0]))
         self.parallel_remove(remove_indices)
         print(f'Cluster updated!!!!!!!!!!!!!! total time: {time.time() - start}')
+
+    @classmethod
+    def get_cell(cls, arch=None):
+        if not arch:
+            return Cell201
+
+        if not cls.nasbench is None:
+            if not cls._is_updated_distances:
+                raise Exception('Distances are not updated properly.')
+
+            # Choose nearest sample in new set every time
+            idx = cls.old_nasbench.archstr2index[arch]
+            candidates = cls._distances[idx][cls._medoid_indices]
+            nearest_idx = np.argmin(candidates)
+            arch = cls.old_nasbench.meta_archs[cls.old_nasbench.evaluated_indexes.index(idx)]
+
+        if isinstance(arch, str):
+            return Cell201(arch)
+        else:
+            return Cell201(**arch)
 
 
 class Nasbench301(Nasbench):

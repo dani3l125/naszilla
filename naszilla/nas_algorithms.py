@@ -66,7 +66,7 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg):
     return result, val_result, data
 
 
-def knas(algo_params, search_space, mp, iterations=1, k=800):
+def knas(algo_params, search_space, mp, iterations=1, k=8):
     # run nas algorithm
     algo_params['total_queries'] = int(algo_params['total_queries'] / iterations)
     ps = copy.deepcopy(algo_params)
@@ -225,7 +225,7 @@ def bananas(search_space,
     """
     Bayesian optimization with a neural predictor
     """
-    data = search_space.generate_k_means_dataset(num=num_init,
+    data = search_space.generate_random_dataset(num=num_init,
                                                     predictor_encoding=predictor_encoding,
                                                     random_encoding=random_encoding,
                                                     deterministic_loss=deterministic,
