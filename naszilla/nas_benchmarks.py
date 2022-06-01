@@ -470,7 +470,6 @@ class KNasbench201(Nasbench201):
         KNasbench201.old_nasbench = copy.deepcopy(self.nasbench)
 
     def remove_by_indices(self, indices):
-        print(indices)
         for idx in indices:
             # a_idx = KNasbench201.nasbench.evaluated_indexes.index(idx)
             arch_str = self.old_nasbench.arch2infos_full[idx].arch_str
