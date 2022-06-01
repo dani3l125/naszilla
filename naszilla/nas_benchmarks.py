@@ -538,7 +538,7 @@ class KNasbench201(Nasbench201):
 
             # Choose nearest sample in new set every time
             # idx = cls.old_nasbench.archstr2index[arch] if isinstance(arch, str) else cls.old_nasbench.archstr2index[arch['spec']]
-            if isinstance(arch, dict):
+            if not isinstance(arch, str):
                 print(arch)
             candidates = cls._distances[idx][cls._medoid_indices]
             nearest_idx = np.argmin(candidates)
