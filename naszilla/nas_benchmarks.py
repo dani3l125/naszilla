@@ -20,7 +20,6 @@ from naszilla.nas_bench_301.cell_301 import Cell301
 
 
 default_data_folder = '~/nas_benchmark_datasets/'
-is_debug = True
 
 
 class Nasbench:
@@ -356,7 +355,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 ):
+                 is_debug=False):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
