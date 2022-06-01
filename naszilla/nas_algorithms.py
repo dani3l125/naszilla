@@ -66,7 +66,7 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg):
     return result, val_result, data
 
 
-def knas(algo_params, search_space, mp, iterations=1, k=8):
+def knas(algo_params, search_space, mp, iterations=1, k=800):
     # run nas algorithm
     algo_params['total_queries'] = int(algo_params['total_queries'] / iterations)
     ps = copy.deepcopy(algo_params)
