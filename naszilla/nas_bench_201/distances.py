@@ -45,3 +45,8 @@ def nasbot_distance(cell_1, cell_2):
     ops_dist = np.sum(np.abs(np.subtract(cell_1_counts, cell_2_counts)))
 
     return ops_dist + adj_distance(cell_1, cell_2)
+
+def real_distance(cell_1, cell_2, nasbench):
+
+    return nasbench.nasbench.query_meta_info_by_index(nasbench.nasbench.query_index_by_arch(cell_1.string)).get_metrics(nasbench.dataset, 'train')['accuracy'] - \
+    nasbench.nasbench.query_meta_info_by_index(nasbench.nasbench.query_index_by_arch(cell_2.string)).get_metrics(nasbench.dataset, 'train')['accuracy']

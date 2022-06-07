@@ -41,8 +41,8 @@ class Cell201:
         """
         From the AutoDL-Projects repository
         """
-        if len(nasbench) != 15625: #  k-medoids
-            return random.choice(nasbench.meta_archs)
+        if len(nasbench) != 15625: #  k-medoids, choice should be from substet
+            return {'string':random.choice(nasbench.meta_archs)}
         ops = []
         for i in range(OP_SPOTS):
             op = random.choice(OPS)
@@ -302,7 +302,7 @@ class Cell201:
                 encoding[index] = 1
         return encoding
 
-    def distance(self, other, dist_type, cutoff=30):
+    def distance(self, other, dist_type, nasbench=None, cutoff=30):
         if dist_type == 'adj':
             distance = adj_distance(self, other)
         elif dist_type == 'path':
@@ -311,6 +311,8 @@ class Cell201:
             distance = path_distance(self, other, cutoff=cutoff)
         elif dist_type == 'nasbot':
             distance = nasbot_distance(self, other)
+        elif dist_type == 'real':
+            distance = real_distance(self, other, nasbench)
         else:
             print('{} is an invalid distance'.format(distance))
             raise NotImplementedError()
