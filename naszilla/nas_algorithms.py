@@ -66,16 +66,21 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg):
     return result, val_result, data
 
 
-def knas(algo_params, search_space, mp, iterations=1, k=400):
+def knas(algo_params, search_space, mp, k_list=[400, 100, 100, 50, 50, 1]):
     # run nas algorithm
-    algo_params['total_queries'] = int(algo_params['total_queries'] / iterations)
+    # TODO: divide queries w.r.t ks' relations
+    algo_params['total_queries'] = int(algo_params['total_queries'] / len(k_list))
     ps = copy.deepcopy(algo_params)
     #TODO: edit number of queries as init_num/iterations, k/iterations
     algo_name = ps.pop('algo_name')
     final_data = []
 
-    for i in range(iterations):
-        search_space.prune(k)
+    for i, k in enumerate(k_list):
+        k = min(int(len(search_space)/2), k)
+        k = max(k, 1)
+        print(f'iteration {i}, k value is {k}')
+        if k != 1:  # 1 means searching in the final cluster as usual
+            search_space.prune(k)
 
         if algo_name == 'random':
             data = random_search(search_space, **ps)
@@ -103,7 +108,8 @@ def knas(algo_params, search_space, mp, iterations=1, k=400):
             print('Invalid algorithm name')
             raise NotImplementedError()
         final_data.extend(data)
-        # search_space.choose_cluster(data)
+        if i < (len(k_list) - 1):  # efficiency
+            search_space.choose_cluster(data)
 
     return final_data
 

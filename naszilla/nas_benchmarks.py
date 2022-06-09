@@ -406,7 +406,7 @@ class KNasbench201(Nasbench201):
                  data_folder=default_data_folder,
                  version='1_0',
                  dim=100,
-                 n_threads=1,
+                 n_threads=16,
                  dist_type='real'):
         super().__init__(dataset, data_folder, version)
         self.dim = dim
@@ -417,6 +417,9 @@ class KNasbench201(Nasbench201):
         self.counter = 0
 
         self._labels = np.zeros(len(self.nasbench))
+
+    def __len__(self):
+        return len(self.nasbench)
 
     @property
     def distances(self):
@@ -431,43 +434,36 @@ class KNasbench201(Nasbench201):
         for i in range(len(self.nasbench)):
             cells_l.append(self.get_cell(KNasbench201.nasbench.meta_archs[KNasbench201.nasbench.evaluated_indexes.index(i)]))
 
-        def calc_dist(module):
-            for i in range(len(self.nasbench)):
-                if i % self.n_threads == module:
-                    self.counter += 1
-                    for j in range(i, len(self.nasbench)):
-                        if self.dist_type == 'real':
-                            KNasbench201._distances[i, j] = KNasbench201._distances[j, i] = self.nasbench.query_meta_info_by_index(self.nasbench.query_index_by_arch(cells_l[i].string)).get_metrics(self.dataset, 'train')['accuracy'] - \
-                            self.nasbench.query_meta_info_by_index(self.nasbench.query_index_by_arch(cells_l[j].string)).get_metrics(self.dataset, 'train')['accuracy']
-                        else:
-                            KNasbench201._distances[i, j] = KNasbench201._distances[j, i] = cells_l[i].distance(cells_l[j], self.dist_type, self)
+        if self.dist_type == 'real':
+            values = np.zeros(size)
+            for i in range(size):
+                values[i] = self.nasbench.query_meta_info_by_index(i).get_metrics(self.dataset, 'train')['accuracy']
 
-        for t_idx in range(self.n_threads):
-            t = Process(target=calc_dist, args=(t_idx,))
-            t.start()
-            threads.append(t)
-        time.sleep(10)
-        for t in threads:
-            t.join()
+            d_row = np.tile(values, (size, 1))
+            d_col = d_row.T
+            KNasbench201._distances = (d_row - d_col) ** 2
 
-        # def load_values(start, end):
-        #         for i in range(start, end):
-        #             values[i] = self.nasbench.query_meta_info_by_index(i).get_metrics(self.dataset, 'train')['accuracy']
-        #
-        # for t_idx in range(self.n_threads - 1):
-        #     t = Process(target=load_values, args=(batch * t_idx, batch * t_idx + batch))
-        #     t.start()
-        #     threads.append(t)
-        # t = Process(target=load_values, args=(batch * (self.n_threads - 1), size))
-        # t.start()
-        # threads.append(t)
-        # for t in threads:
-        #     t.join()
-        #
-        # d_row = np.tile(values, (size, 1))
-        # d_col = d_row.T
-        # KNasbench201._distances = (d_row - d_col) ** 2
-        #
+        else:
+            def calc_dist(module):
+                for i in range(len(self.nasbench)):
+                    if i % self.n_threads == module:
+                        self.counter += 1
+                        for j in range(i, len(self.nasbench)):
+                            if self.dist_type == 'real':
+                                KNasbench201._distances[i, j] = KNasbench201._distances[j, i] = self.nasbench.query_meta_info_by_index(self.nasbench.query_index_by_arch(cells_l[i].string)).get_metrics(self.dataset, 'train')['accuracy'] - \
+                                self.nasbench.query_meta_info_by_index(self.nasbench.query_index_by_arch(cells_l[j].string)).get_metrics(self.dataset, 'train')['accuracy']
+                            else:
+                                KNasbench201._distances[i, j] = KNasbench201._distances[j, i] = cells_l[i].distance(cells_l[j], self.dist_type, self)
+
+            for t_idx in range(self.n_threads):
+                t = Process(target=calc_dist, args=(t_idx,))
+                t.start()
+                threads.append(t)
+            time.sleep(10)
+            for t in threads:
+                t.join()
+
+
         print(f'##############\n\n\n distances calculated in {time.time() - start}sec\n\n\n ###################')
 
         KNasbench201._is_updated_distances = True
@@ -493,7 +489,8 @@ class KNasbench201(Nasbench201):
     def get_type(self):
         return 'knasbench_201'
 
-    def copy_bench(self):
+    @classmethod
+    def copy_bench(cls):
         KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
 
     def remove_by_indices(self, indices):
@@ -528,31 +525,31 @@ class KNasbench201(Nasbench201):
 
     def prune(self, k=20):
         start = time.time()
-        copy_thread = Process(target=self.copy_bench)
-        copy_thread.start()
-        kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(self.distances)
+        # TODO: debug deepcopy paralelizing
+        # copy_thread = Process(target=KNasbench201.copy_bench)
+        # copy_thread.start()
+        KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
+        kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(  # Take distances from current cluster
+            self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes])
         self._labels = kmedoids.labels_
         KNasbench201._medoid_indices = kmedoids.medoid_indices_
-        copy_thread.join()
-        remove_indices = list(set(range(len(self.nasbench))) - set(kmedoids.medoid_indices_))
+        # copy_thread.join()
+        remove_indices = list(set(range(len(KNasbench201.nasbench))) - set(kmedoids.medoid_indices_))
         self.parallel_remove(remove_indices)
 
-        print(f'Pruned!!!!!!!!!!!!!! total time: {time.time() - start}')
-        print(self.nasbench)
+        print(f'#############\n\nSpace updated to center. total time: {time.time() - start}\n\n#############')
 
     def choose_cluster(self, data):
         start = time.time()
-        self.nasbench = self.old_nasbench
-        copy_thread = Process(target=self.copy_bench)
-        copy_thread.start()
-
+        KNasbench201.nasbench = KNasbench201.old_nasbench
         best_dict = min(data, key=lambda x:x['test_loss']) # there is val_loss also.
-        best_str = best_dict['spec']
-        cluster_idx = self._labels[self.nasbench.archstr2index[best_str]]
-        cluster_elements = np.where(self._labels == cluster_idx)  # Indexes in list only!
-        remove_indices = list(set(range(len(self.nasbench))) - set(cluster_elements[0]))
+        best_str = best_dict['spec']['string']
+        cluster_idx = self._labels[KNasbench201.nasbench.archstr2index[best_str]]
+        cluster_elements_indexes_list = np.where(self._labels == cluster_idx)[0]  # Indexes in list only!
+        real_indexes = np.array(KNasbench201.nasbench.evaluated_indexes)[cluster_elements_indexes_list]
+        remove_indices = list(set(KNasbench201.nasbench.evaluated_indexes) - set(real_indexes))
         self.parallel_remove(remove_indices)
-        print(f'Cluster updated!!!!!!!!!!!!!! total time: {time.time() - start}')
+        print(f'#############\n\nSpace updated to cluster. total time: {time.time() - start}\n\n#############')
 
     @classmethod
     def get_cell(cls, arch=None):
