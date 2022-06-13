@@ -109,7 +109,7 @@ def knas(algo_params, search_space, mp, k_list=[400, 100, 100, 50, 50, 1]):
             raise NotImplementedError()
         final_data.extend(data)
         if i < (len(k_list) - 1):  # efficiency
-            search_space.choose_cluster(data)
+            search_space.choose_clusters(data, 3)
 
     return final_data
 

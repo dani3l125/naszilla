@@ -23,3 +23,5 @@ tensorboard==1.14.0
 tensorflow-estimator
 tqdm
 xgboost
+python-Levenshtein
+

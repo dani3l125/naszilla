@@ -311,6 +311,8 @@ class Cell201:
             distance = path_distance(self, other, cutoff=cutoff)
         elif dist_type == 'nasbot':
             distance = nasbot_distance(self, other)
+        elif dist_type == 'lev':
+            distance = lev_distance(self, other)
         elif dist_type == 'real':
             distance = real_distance(self, other, nasbench)
         else:

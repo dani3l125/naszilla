@@ -1,0 +1,19 @@
+iterations: 10
+
+fullKnas: False  # completely deterministic or not
+
+kScheduler:
+  type: "geometric"  # Choose out of linear, geometric, manual
+  maxVal: 400  # can be set to -c: such that maxVal is size/c
+  minVal: 30  # can be set to -c: such that mivVal is size/c
+  manual: []
+
+mScheduler:
+  type: "geometric"
+  maxVal: 3  # can be set to -c
+  maxVal: 1
+  manual: []
+
+qScheduler:
+  type: "geometric"
+  maxVal: 3  # can be set to -c

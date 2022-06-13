@@ -1,4 +1,5 @@
-
+from functools import lru_cache
+from Levenshtein import distance as levenshtein
 import numpy as np
 
 OPS = ['avg_pool_3x3', 'nor_conv_1x1', 'nor_conv_3x3', 'none', 'skip_connect']
@@ -46,7 +47,30 @@ def nasbot_distance(cell_1, cell_2):
 
     return ops_dist + adj_distance(cell_1, cell_2)
 
-def real_distance(cell_1, cell_2, nasbench):
+def lev_distance(cell_1, cell_2):
+    return levenshtein(cell_1.string, cell_2.string)
 
+    # a = cell_1.string
+    # b = cell_2.string
+    # @lru_cache(None)  # for memorization
+    # def min_dist(s1, s2):
+    #
+    #     if s1 == len(a) or s2 == len(b):
+    #         return len(a) - s1 + len(b) - s2
+    #
+    #     # no change required
+    #     if a[s1] == b[s2]:
+    #         return min_dist(s1 + 1, s2 + 1)
+    #
+    #     return 1 + min(
+    #         min_dist(s1, s2 + 1),      # insert character
+    #         min_dist(s1 + 1, s2),      # delete character
+    #         min_dist(s1 + 1, s2 + 1),  # replace character
+    #     )
+    #
+    # return min_dist(0, 0)
+
+
+def real_distance(cell_1, cell_2, nasbench):
     return nasbench.nasbench.query_meta_info_by_index(nasbench.nasbench.query_index_by_arch(cell_1.string)).get_metrics(nasbench.dataset, 'train')['accuracy'] - \
     nasbench.nasbench.query_meta_info_by_index(nasbench.nasbench.query_index_by_arch(cell_2.string)).get_metrics(nasbench.dataset, 'train')['accuracy']

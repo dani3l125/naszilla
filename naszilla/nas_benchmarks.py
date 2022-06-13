@@ -3,10 +3,11 @@ import pickle
 import sys
 import os
 import threading
-from multiprocessing import Process
+import multiprocessing as mp
 import time
 import copy
 import random
+import ctypes
 
 from sklearn_extra.cluster import KMedoids
 from torch import load
@@ -20,19 +21,26 @@ from naszilla.nas_bench_201.cell_201 import Cell201
 from naszilla.nas_bench_301.cell_301 import Cell301
 from naszilla.nas_bench_201.distances import *
 
-
 default_data_folder = '~/nas_benchmark_datasets/'
 
+def to_numpy_array(shared_array, shape):
+    '''Create a numpy array backed by a shared memory Array.'''
+    arr = np.ctypeslib.as_array(shared_array)
+    return arr.reshape(shape)
+
+def to_shared_array(arr, ctype):
+    shared_array = mp.Array(ctype, arr.size, lock=False)
+    return shared_array
 
 class Nasbench:
 
     def get_cell(self, arch=None):
         return None
 
-    def query_arch(self, 
-                   arch=None, 
-                   train=True, 
-                   predictor_encoding=None, 
+    def query_arch(self,
+                   arch=None,
+                   train=True,
+                   predictor_encoding=None,
                    cutoff=0,
                    random_encoding='adj',
                    deterministic=True,
@@ -45,10 +53,9 @@ class Nasbench:
         arch_dict['epochs'] = epochs
 
         if arch is None:
-
             arch = self.get_cell().random_cell(self.nasbench,
-                                               random_encoding=random_encoding, 
-                                               max_edges=max_edges, 
+                                               random_encoding=random_encoding,
+                                               max_edges=max_edges,
                                                max_nodes=max_nodes,
                                                cutoff=cutoff,
                                                index_hash=self.index_hash)
@@ -56,38 +63,37 @@ class Nasbench:
 
         if predictor_encoding:
             arch_dict['encoding'] = self.get_cell(arch).encode(predictor_encoding=predictor_encoding,
-                                                                 nasbench=self.nasbench,
-                                                                 deterministic=deterministic,
-                                                                 cutoff=cutoff)
+                                                               nasbench=self.nasbench,
+                                                               deterministic=deterministic,
+                                                               cutoff=cutoff)
 
         if train:
-            arch_dict['val_loss'] = self.get_cell(arch).get_val_loss(self.nasbench, 
-                                                                       deterministic=deterministic,
-                                                                       dataset=self.dataset)
+            arch_dict['val_loss'] = self.get_cell(arch).get_val_loss(self.nasbench,
+                                                                     deterministic=deterministic,
+                                                                     dataset=self.dataset)
             arch_dict['test_loss'] = self.get_cell(arch).get_test_loss(self.nasbench,
-                                                                         dataset=self.dataset)
+                                                                       dataset=self.dataset)
             arch_dict['num_params'] = self.get_cell(arch).get_num_params(self.nasbench)
             arch_dict['val_per_param'] = (arch_dict['val_loss'] - 4.8) * (arch_dict['num_params'] ** 0.5) / 100
 
         return arch_dict
 
-    def mutate_arch(self, 
-                    arch, 
-                    mutation_rate=1.0, 
+    def mutate_arch(self,
+                    arch,
+                    mutation_rate=1.0,
                     mutate_encoding='adj',
                     cutoff=0):
 
         return self.get_cell(arch).mutate(self.nasbench,
-                                            mutation_rate=mutation_rate,
-                                            mutate_encoding=mutate_encoding,
-                                            index_hash=self.index_hash,
-                                            cutoff=cutoff)
-
+                                          mutation_rate=mutation_rate,
+                                          mutate_encoding=mutate_encoding,
+                                          index_hash=self.index_hash,
+                                          cutoff=cutoff)
 
     def generate_random_dataset(self,
-                                num=10, 
+                                num=10,
                                 train=True,
-                                predictor_encoding=None, 
+                                predictor_encoding=None,
                                 random_encoding='adj',
                                 deterministic_loss=True,
                                 patience_factor=5,
@@ -123,16 +129,15 @@ class Nasbench:
                 data.append(arch_dict)
         return data
 
-
-    def get_candidates(self, 
-                       data, 
+    def get_candidates(self,
+                       data,
                        num=100,
                        acq_opt_type='mutation',
                        predictor_encoding=None,
                        mutate_encoding='adj',
                        loss='val_loss',
-                       allow_isomorphisms=False, 
-                       patience_factor=5, 
+                       allow_isomorphisms=False,
+                       patience_factor=5,
                        deterministic_loss=True,
                        num_arches_to_mutate=1,
                        max_mutation_rate=1,
@@ -156,7 +161,8 @@ class Nasbench:
 
         if acq_opt_type in ['mutation', 'mutation_random']:
             # mutate architectures with the lowest loss
-            best_arches = [arch['spec'] for arch in sorted(data, key=lambda i:i[loss])[:num_arches_to_mutate * patience_factor]]
+            best_arches = [arch['spec'] for arch in
+                           sorted(data, key=lambda i: i[loss])[:num_arches_to_mutate * patience_factor]]
 
             # stop when candidates is size num
             # use patience_factor instead of a while loop to avoid long or infinite runtime
@@ -166,10 +172,10 @@ class Nasbench:
                     break
                 for i in range(int(num / num_arches_to_mutate / max_mutation_rate)):
                     for rate in range(1, max_mutation_rate + 1):
-                        mutated = self.mutate_arch(arch, 
-                                                   mutation_rate=rate, 
+                        mutated = self.mutate_arch(arch,
+                                                   mutation_rate=rate,
                                                    mutate_encoding=mutate_encoding)
-                        arch_dict = self.query_arch(mutated, 
+                        arch_dict = self.query_arch(mutated,
                                                     train=train,
                                                     predictor_encoding=predictor_encoding,
                                                     deterministic=deterministic_loss,
@@ -177,7 +183,7 @@ class Nasbench:
                         h = self.get_hash(mutated)
 
                         if allow_isomorphisms or h not in dic:
-                            dic[h] = 1    
+                            dic[h] = 1
                             candidates.append(arch_dict)
 
         if acq_opt_type in ['random', 'mutation_random']:
@@ -186,7 +192,7 @@ class Nasbench:
                 if len(candidates) >= 2 * num:
                     break
 
-                arch_dict = self.query_arch(train=train, 
+                arch_dict = self.query_arch(train=train,
                                             predictor_encoding=predictor_encoding,
                                             cutoff=cutoff)
                 h = self.get_hash(arch_dict['spec'])
@@ -211,9 +217,9 @@ class Nasbench:
                 unduplicated.append(candidate)
         return unduplicated
 
-    def train_test_split(self, data, train_size, 
-                                     shuffle=True, 
-                                     rm_duplicates=True):
+    def train_test_split(self, data, train_size,
+                         shuffle=True,
+                         rm_duplicates=True):
         if shuffle:
             np.random.shuffle(data)
         traindata = data[:train_size]
@@ -222,7 +228,6 @@ class Nasbench:
         if rm_duplicates:
             self.remove_duplicates(testdata, traindata)
         return traindata, testdata
-
 
     def encode_data(self, dicts):
         # input: list of arch dictionary objects
@@ -263,7 +268,7 @@ class Nasbench:
         for arch in top_arches:
             for edits in range(1, max_edits):
                 for _ in range(num_repeats):
-                    #perturbation = Cell(**arch).perturb(self.nasbench, edits)
+                    # perturbation = Cell(**arch).perturb(self.nasbench, edits)
                     perturbation = self.get_cell(arch).mutate(self.nasbench, edits)
                     path_indices = self.get_cell(perturbation).get_path_indices()
                     if path_indices not in dic:
@@ -294,9 +299,9 @@ class Nasbench:
 class Nasbench101(Nasbench):
 
     def __init__(self,
-               data_folder=default_data_folder,
-               index_hash_folder='./',
-               mf=False):
+                 data_folder=default_data_folder,
+                 index_hash_folder='./',
+                 mf=False):
         self.mf = mf
         self.dataset = 'cifar10'
 
@@ -342,17 +347,18 @@ class Nasbench101(Nasbench):
         return cells
 
     def get_nbhd(self, arch, mutate_encoding='adj'):
-        return Cell101(**arch).get_neighborhood(self.nasbench, 
+        return Cell101(**arch).get_neighborhood(self.nasbench,
                                                 mutate_encoding=mutate_encoding,
                                                 index_hash=self.index_hash)
 
     def get_hash(self, arch):
         # return a unique hash of the architecture+fidelity
         return Cell101(**arch).get_path_indices()
-        
+
 
 class Nasbench201(Nasbench):
     nasbench = None
+
     def __init__(self,
                  dataset='cifar10',
                  data_folder=default_data_folder,
@@ -384,10 +390,10 @@ class Nasbench201(Nasbench):
     def get_nbhd(self, arch, mutate_encoding='adj'):
         if isinstance(arch, str):
             return Cell201(arch).get_neighborhood(self.nasbench,
-                                                mutate_encoding=mutate_encoding)
+                                                  mutate_encoding=mutate_encoding)
         else:
             return Cell201(**arch).get_neighborhood(self.nasbench,
-                                                mutate_encoding=mutate_encoding)
+                                                    mutate_encoding=mutate_encoding)
 
     def get_hash(self, arch):
         # return a unique hash of the architecture+fidelity
@@ -396,18 +402,20 @@ class Nasbench201(Nasbench):
         else:
             return Cell201(**arch).get_string()
 
+
 class KNasbench201(Nasbench201):
     _is_updated_distances = False
     _distances = None
     _medoid_indices = None
     old_nasbench = None
+
     def __init__(self,
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
                  dim=100,
                  n_threads=16,
-                 dist_type='real'):
+                 dist_type='lev'):
         super().__init__(dataset, data_folder, version)
         self.dim = dim
         self.n_threads = n_threads
@@ -428,11 +436,12 @@ class KNasbench201(Nasbench201):
             return KNasbench201._distances
 
         size = len(self.nasbench)
-        KNasbench201._distances = np.zeros((size, size))
+        KNasbench201._distances = np.zeros((size, size)).astype(np.float32)
         threads = []
         cells_l = []
         for i in range(len(self.nasbench)):
-            cells_l.append(self.get_cell(KNasbench201.nasbench.meta_archs[KNasbench201.nasbench.evaluated_indexes.index(i)]))
+            cells_l.append(
+                self.get_cell(KNasbench201.nasbench.meta_archs[KNasbench201.nasbench.evaluated_indexes.index(i)],  init=True))
 
         if self.dist_type == 'real':
             values = np.zeros(size)
@@ -442,33 +451,42 @@ class KNasbench201(Nasbench201):
             d_row = np.tile(values, (size, 1))
             d_col = d_row.T
             KNasbench201._distances = (d_row - d_col) ** 2
+        # elif self.dist_type == 'lev':
+        #     KNasbench201._distances = np.load('lev_dist.npy')
 
         else:
-            def calc_dist(module):
+            def calc_dist(buf, module):
+                distances = to_numpy_array(buf, (size, size))
                 for i in range(len(self.nasbench)):
                     if i % self.n_threads == module:
                         self.counter += 1
                         for j in range(i, len(self.nasbench)):
                             if self.dist_type == 'real':
-                                KNasbench201._distances[i, j] = KNasbench201._distances[j, i] = self.nasbench.query_meta_info_by_index(self.nasbench.query_index_by_arch(cells_l[i].string)).get_metrics(self.dataset, 'train')['accuracy'] - \
-                                self.nasbench.query_meta_info_by_index(self.nasbench.query_index_by_arch(cells_l[j].string)).get_metrics(self.dataset, 'train')['accuracy']
+                                distances[i, j] = distances[j, i] = \
+                                self.nasbench.query_meta_info_by_index(
+                                    self.nasbench.query_index_by_arch(cells_l[i].string)).get_metrics(self.dataset,
+                                                                                                      'train')['accuracy'] - \
+                                self.nasbench.query_meta_info_by_index(
+                                    self.nasbench.query_index_by_arch(cells_l[j].string)).get_metrics(self.dataset,
+                                                                                                      'train')['accuracy']
                             else:
-                                KNasbench201._distances[i, j] = KNasbench201._distances[j, i] = cells_l[i].distance(cells_l[j], self.dist_type, self)
+                                distances[i, j] = distances[j, i] = cells_l[i].distance(
+                                    cells_l[j], self.dist_type, self)
+                            # print(KNasbench201._distances[i, j])
 
+            shared_buf = to_shared_array(KNasbench201._distances, ctypes.c_float)
             for t_idx in range(self.n_threads):
-                t = Process(target=calc_dist, args=(t_idx,))
+                t = mp.Process(target=calc_dist, args=(shared_buf, t_idx,))
                 t.start()
                 threads.append(t)
             time.sleep(10)
             for t in threads:
                 t.join()
-
-
-        print(f'##############\n\n\n distances calculated in {time.time() - start}sec\n\n\n ###################')
+            KNasbench201._distances = to_numpy_array(shared_buf, (size, size))
+        np.save('lev_dist.npy', KNasbench201._distances)
 
         KNasbench201._is_updated_distances = True
         return KNasbench201._distances
-
 
     @property
     def points(self):
@@ -489,8 +507,7 @@ class KNasbench201(Nasbench201):
     def get_type(self):
         return 'knasbench_201'
 
-    @classmethod
-    def copy_bench(cls):
+    def copy_bench(self):
         KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
 
     def remove_by_indices(self, indices):
@@ -509,19 +526,18 @@ class KNasbench201(Nasbench201):
         first_idx = 0
         last_idx = chunk_size
         for i in range(self.n_threads - 1):
-            t = Process(target=self.remove_by_indices, args=([remove_indices[first_idx:last_idx]]))
+            t = mp.Process(target=self.remove_by_indices, args=([remove_indices[first_idx:last_idx]]))
             t.start()
             threads.append(t)
             first_idx += chunk_size
             last_idx += chunk_size
         if last_idx >= len(remove_indices) - 1:
-            t = Process(target=self.remove_by_indices, args=([remove_indices[last_idx:]]))
+            t = mp.Process(target=self.remove_by_indices, args=([remove_indices[last_idx:]]))
             t.start()
             threads.append(t)
 
         for t in threads:
             t.join()
-
 
     def prune(self, k=20):
         start = time.time()
@@ -539,32 +555,37 @@ class KNasbench201(Nasbench201):
 
         print(f'#############\n\nSpace updated to center. total time: {time.time() - start}\n\n#############')
 
-    def choose_cluster(self, data):
+    def choose_clusters(self, data, m):
         start = time.time()
         KNasbench201.nasbench = KNasbench201.old_nasbench
-        best_dict = min(data, key=lambda x:x['test_loss']) # there is val_loss also.
-        best_str = best_dict['spec']['string']
-        cluster_idx = self._labels[KNasbench201.nasbench.archstr2index[best_str]]
-        cluster_elements_indexes_list = np.where(self._labels == cluster_idx)[0]  # Indexes in list only!
-        real_indexes = np.array(KNasbench201.nasbench.evaluated_indexes)[cluster_elements_indexes_list]
-        remove_indices = list(set(KNasbench201.nasbench.evaluated_indexes) - set(real_indexes))
+        best_dicts = sorted(data, key=lambda x:x['test_loss'])[:m]  # there is val_loss also.
+        remove_indices = set(KNasbench201.nasbench.evaluated_indexes)
+        for best_dict in best_dicts:
+            best_str = best_dict['spec']['string']
+            cluster_idx = self._labels[KNasbench201.nasbench.archstr2index[best_str]]
+            cluster_elements_indexes_list = np.where(self._labels == cluster_idx)[0]  # Indexes in list only!
+            real_indexes = np.array(KNasbench201.nasbench.evaluated_indexes)[cluster_elements_indexes_list]
+            remove_indices = remove_indices - set(real_indexes)
+        remove_indices = list(remove_indices)
         self.parallel_remove(remove_indices)
         print(f'#############\n\nSpace updated to cluster. total time: {time.time() - start}\n\n#############')
 
+
     @classmethod
-    def get_cell(cls, arch=None):
+    def get_cell(cls, arch=None, init=False):
         if not arch:
             return Cell201
 
-        if not cls.nasbench is None:
+        if not cls.nasbench is None and not init:
             # if not cls._is_updated_distances:
             #     raise Exception('Distances are not updated properly.')
 
             # Choose nearest sample in new set every time
-            idx = cls.nasbench.archstr2index[arch] if isinstance(arch, str) else cls.nasbench.archstr2index[arch['string']]
-            candidates = cls._distances[idx][cls._medoid_indices]
-            nearest_idx = np.argmin(candidates)
-            arch = cls.nasbench.meta_archs[cls.nasbench.evaluated_indexes.index(nearest_idx)]
+            idx = cls.old_nasbench.archstr2index[arch] if isinstance(arch, str) else cls.old_nasbench.archstr2index[
+                arch['string']]
+            candidates = cls._distances[idx][np.array(cls.nasbench.evaluated_indexes).astype(int)]
+            nearest_idx = np.argmin(candidates)  # this is the index in evaluated indexes list
+            arch = cls.nasbench.meta_archs[nearest_idx]
 
         if isinstance(arch, str):
             return Cell201(arch)
@@ -576,14 +597,14 @@ class Nasbench301(Nasbench):
 
     def __init__(self,
                  data_folder=default_data_folder
-                ):
+                 ):
         self.dataset = 'cifar10'
         self.search_space = 'nasbench_301'
         ensemble_dir_performance = os.path.expanduser(data_folder + 'nb_models/xgb_v0.9')
         performance_model = nb.load_ensemble(ensemble_dir_performance)
         ensemble_dir_runtime = os.path.expanduser(data_folder + 'nb_models/lgb_runtime_v0.9')
         runtime_model = nb.load_ensemble(ensemble_dir_runtime)
-        self.nasbench = [performance_model, runtime_model] 
+        self.nasbench = [performance_model, runtime_model]
         self.index_hash = None
 
     def get_type(self):
@@ -597,10 +618,9 @@ class Nasbench301(Nasbench):
             return Cell301(**arch)
 
     def get_nbhd(self, arch, mutate_encoding='adj'):
-        return Cell301(**arch).get_neighborhood(self.nasbench, 
+        return Cell301(**arch).get_neighborhood(self.nasbench,
                                                 mutate_encoding=mutate_encoding)
 
     def get_hash(self, arch):
         # return a unique hash of the architecture+fidelity
         return Cell301(**arch).serialize()
-
