@@ -129,6 +129,9 @@ class Nasbench:
                 data.append(arch_dict)
         return data
 
+    def generate_complete_dataset(self):
+        raise NotImplementedError
+
     def get_candidates(self,
                        data,
                        num=100,
@@ -368,6 +371,8 @@ class Nasbench201(Nasbench):
         self.dataset = dataset
         self.index_hash = None
 
+        print(f'\t\t\t\nis debug  =  {is_debug}')
+
         if is_debug:
             Nasbench201.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
         elif version == '1_0':
@@ -402,6 +407,13 @@ class Nasbench201(Nasbench):
         else:
             return Cell201(**arch).get_string()
 
+    def generate_complete_dataset(self):
+        data = []
+        if len(data) == 0:
+            print('1')
+        for arch in KNasbench201.nasbench.meta_archs:
+            data.append(self.query_arch(arch))
+        return data
 
 class KNasbench201(Nasbench201):
     _is_updated_distances = False
@@ -423,6 +435,8 @@ class KNasbench201(Nasbench201):
         self._points = None
         self.dist_type = dist_type
         self.counter = 0
+        self.ratio = -1
+        self.cluster_sizes = None
 
         self._labels = np.zeros(len(self.nasbench))
 
@@ -511,6 +525,7 @@ class KNasbench201(Nasbench201):
         KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
 
     def remove_by_indices(self, indices):
+        # print(f'Indexes to remove:{indices}')
         for idx in indices:
             # a_idx = KNasbench201.nasbench.evaluated_indexes.index(idx)
             arch_str = KNasbench201.nasbench.arch2infos_full[idx].arch_str
@@ -539,7 +554,9 @@ class KNasbench201(Nasbench201):
         for t in threads:
             t.join()
 
+
     def prune(self, k=20):
+        self.ratio = k / len(KNasbench201.nasbench)
         start = time.time()
         # TODO: debug deepcopy paralelizing
         # copy_thread = Process(target=KNasbench201.copy_bench)
@@ -549,27 +566,45 @@ class KNasbench201(Nasbench201):
             self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes])
         self._labels = kmedoids.labels_
         KNasbench201._medoid_indices = kmedoids.medoid_indices_
+        self.cluster_sizes = np.bincount(self._labels)
         # copy_thread.join()
-        remove_indices = list(set(range(len(KNasbench201.nasbench))) - set(kmedoids.medoid_indices_))
-        self.parallel_remove(remove_indices)
+        remove_indices = list(set(KNasbench201.nasbench.evaluated_indexes) - set(kmedoids.medoid_indices_))
+        self.remove_by_indices(remove_indices)
+        # self.parallel_remove(remove_indices)
 
-        print(f'#############\n\nSpace updated to center. total time: {time.time() - start}\n\n#############')
+        print(f'\nSpace updated to centers. total time: {time.time() - start}\n')
 
-    def choose_clusters(self, data, m):
+    def cluster_by_arch(self, arch):
+        return self._labels[KNasbench201.nasbench.archstr2index[arch]]
+
+    def choose_clusters(self, data, m=0, k=0):
         start = time.time()
+        # When m is 0, choose it automatically to save query-data ratio
+        best_dicts = sorted(data, key=lambda x: x['val_loss'])
+        if m == 0:
+            ratios = np.zeros(len(best_dicts))
+            for i, best_dict in enumerate(best_dicts):
+                ratios[i] = ratios[i-1] + self.cluster_sizes[self.cluster_by_arch(best_dict['spec'])] if i != 0 else self.cluster_sizes[self.cluster_by_arch(best_dict['spec'])]
+            ratios = k / ratios
+            m = 1 + np.argmin(np.abs(ratios - self.ratio))
+            if m >= len(best_dicts) / 2:
+                # remove at least half of the data each operation
+                m = 1 + np.argmin(np.abs(ratios - 0.5))
+                print(f'm and r were hard code updated')
+            print(f'Automaticaly chosen m ={m}. original ratio is {self.ratio}, new ratio is {ratios[m-1]}')
+            self.ratio = ratios[m - 1]
+        m = max(m, 1)
         KNasbench201.nasbench = KNasbench201.old_nasbench
-        best_dicts = sorted(data, key=lambda x:x['test_loss'])[:m]  # there is val_loss also.
+        best_dicts = best_dicts[:m]  # there is val_loss also.
         remove_indices = set(KNasbench201.nasbench.evaluated_indexes)
         for best_dict in best_dicts:
-            best_str = best_dict['spec']['string']
-            cluster_idx = self._labels[KNasbench201.nasbench.archstr2index[best_str]]
+            cluster_idx = self.cluster_by_arch(best_dict['spec'])
             cluster_elements_indexes_list = np.where(self._labels == cluster_idx)[0]  # Indexes in list only!
             real_indexes = np.array(KNasbench201.nasbench.evaluated_indexes)[cluster_elements_indexes_list]
             remove_indices = remove_indices - set(real_indexes)
         remove_indices = list(remove_indices)
-        self.parallel_remove(remove_indices)
-        print(f'#############\n\nSpace updated to cluster. total time: {time.time() - start}\n\n#############')
-
+        self.remove_by_indices(remove_indices)
+        print(f'\nSpace updated to clusters. total time: {time.time() - start}\n')
 
     @classmethod
     def get_cell(cls, arch=None, init=False):

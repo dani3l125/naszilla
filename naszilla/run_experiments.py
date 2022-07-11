@@ -6,6 +6,7 @@ import os
 import pickle
 import numpy as np
 import copy
+import yaml
 
 from naszilla.params import *
 from naszilla.nas_benchmarks import Nasbench101, Nasbench201, Nasbench301, KNasbench201
@@ -29,23 +30,28 @@ def run_experiments(args, save_dir):
     # set up search space
     mp = copy.deepcopy(metann_params)
 
-    if ss == 'nasbench_101':
-        if args.k_alg:
-            print('K alg not supported yet!')
-            raise NotImplementedError()
-        search_space = Nasbench101(mf=mf)
-    elif ss == 'nasbench_201':
-        search_space = Nasbench201(dataset=dataset) if not args.k_alg else KNasbench201(dataset=dataset)
-    elif ss == 'nasbench_301':
-        if args.k_alg:
-            print('K alg not supported yet!')
-            raise NotImplementedError()
-        search_space = Nasbench301()
-    else:
-        print('Invalid search space')
-        raise NotImplementedError()
+    # read configuration
+    cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
 
     for i in range(trials):
+
+        if ss == 'nasbench_101':
+            if args.k_alg:
+                print('K alg not supported yet!')
+                raise NotImplementedError()
+            search_space = Nasbench101(mf=mf)
+        elif ss == 'nasbench_201':
+            search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
+                KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'])
+        elif ss == 'nasbench_301':
+            if args.k_alg:
+                print('K alg not supported yet!')
+                raise NotImplementedError()
+            search_space = Nasbench301()
+        else:
+            print('Invalid search space')
+            raise NotImplementedError()
+
         results = []
         val_results = []
         walltimes = []
@@ -55,7 +61,7 @@ def run_experiments(args, save_dir):
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
             starttime = time.time()
             # this line runs the nas algorithm and returns the result
-            result, val_result, run_datum = run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg)
+            result, val_result, run_datum = run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg, cfg)
 
             result = np.round(result, 5)
             val_result = np.round(val_result, 5)
@@ -123,6 +129,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_dir', type=str, default='results_output', help='name of save directory')
     parser.add_argument('--save_specs', type=bool, default=False, help='save the architecture specs')
     parser.add_argument('--k_alg', type=int, default=0, help='use iterative k algorithm')
+    parser.add_argument('--cfg', type=str, default='/home/daniel/naszilla/naszilla/knas_config.yaml', help='path to configuration file')
 
     args = parser.parse_args()
     main(args)

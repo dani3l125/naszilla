@@ -24,4 +24,5 @@ tensorflow-estimator
 tqdm
 xgboost
 python-Levenshtein
+pyyaml
 

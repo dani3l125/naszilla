@@ -21,14 +21,15 @@ DEFAULT_TOTAL_QUERIES = 150
 DEFAULT_LOSS = 'val_loss'
 
 
-def run_nas_algorithm(algo_params, search_space, mp, k_alg):
-
+def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
     # run nas algorithm
     ps = copy.deepcopy(algo_params)
     algo_name = ps.pop('algo_name')
 
     if k_alg:
-        data = knas(algo_params, search_space, mp)
+        if cfg is None:
+            raise Exception('No configuration file')
+        data = knas(algo_params, search_space, mp, cfg)
     elif algo_name == 'random':
         data = random_search(search_space, **ps)
     elif algo_name == 'evolution':
@@ -48,13 +49,13 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg):
     elif algo_name == 'gcn_predictor':
         data = gcn_predictor(search_space, **ps)
     elif algo_name == 'vaenas':
-        #data = bananas(search_space, mp, **ps, predictor='vae', predictor_encoding='vae')
+        # data = bananas(search_space, mp, **ps, predictor='vae', predictor_encoding='vae')
         print('Currently not implemented')
         raise NotImplementedError()
     else:
         print('Invalid algorithm name')
         raise NotImplementedError()
-    
+
     if 'k' not in ps:
         ps['k'] = DEFAULT_K
     if 'total_queries' not in ps:
@@ -62,27 +63,109 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg):
     if 'loss' not in ps:
         ps['loss'] = DEFAULT_LOSS
 
-    result, val_result = compute_best_test_losses(data, ps['k'], ps['total_queries'], ps['loss'])
+    result, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], DEFAULT_LOSS)
     return result, val_result, data
 
 
-def knas(algo_params, search_space, mp, k_list=[400, 100, 100, 50, 50, 1]):
+def schedule_linear(first, last, n):
+    d = (last - first) / (n - 1)
+    if d == 0:
+        return first * (np.ones(n)).astype(int)
+    return np.round(np.arange(first, last + d, d)).astype(int)
+
+
+def schedule_geometric(first, last, n):
+    return np.round(np.geomspace(first, last, n)).astype(int)
+
+
+def schedule_linear_by_sum(first, s, n):
+    d = 2 * (((s / n) - first) / (n - 1))
+    above_last = first + d * n
+    if d == 0:
+        return first * (np.ones(n)).astype(int)
+    return np.round(np.arange(first, above_last, d)).astype(int)
+
+
+def schedule_geometric_by_sum(ratio, s, n):
+    r_n = ratio ** n
+    first = (s * (1 - ratio)) / (1 - r_n)
+    return np.round(np.geomspace(first, first * r_n / ratio, n))[::-1].astype(int)
+
+
+def knas(algo_params, search_space, mp, cfg):
     # run nas algorithm
-    # TODO: divide queries w.r.t ks' relations
-    algo_params['total_queries'] = int(algo_params['total_queries'] / len(k_list))
+    def update_value(value):
+        if value < 0:
+            value = - (len(search_space) / value)
+        return value
+
+    n_iterations = cfg['iterations']
+
+    # k scheduler
+    if cfg['kScheduler']['type'] == 'manual':
+        k_list = np.array(cfg['kScheduler']['manual'])
+    else:
+        first = update_value(cfg['kScheduler']['first'])
+        last = update_value(cfg['kScheduler']['last'])
+        if cfg['kScheduler']['type'] == 'linear':
+            k_list = schedule_linear(first, last, n_iterations)
+        elif cfg['kScheduler']['type'] == 'geometric':
+            k_list = schedule_geometric(first, last, n_iterations)
+        else:
+            raise NotImplementedError()
+
+    # m scheduler
+    if cfg['mScheduler']['type'] == 'manual':
+        m_list = np.array(cfg['mScheduler']['manual'])
+    else:
+        first = update_value(cfg['mScheduler']['first'])
+        last = update_value(cfg['mScheduler']['last'])
+        if cfg['mScheduler']['type'] == 'linear':
+            m_list = schedule_linear(first, last, n_iterations)
+        elif cfg['mScheduler']['type'] == 'geometric':
+            m_list = schedule_geometric(first, last, n_iterations)
+        else:
+            raise NotImplementedError()
+
+    # q scheduler
+    if cfg['qScheduler']['type'] == 'manual':
+        m_list = np.array(cfg['qScheduler']['manual'])
+    else:
+        first = update_value(cfg['qScheduler']['first'])
+        if cfg['qScheduler']['type'] == 'linear':
+            q_list = schedule_linear_by_sum(first, algo_params['total_queries'], n_iterations)
+        elif cfg['qScheduler']['type'] == 'geometric':
+            q_list = schedule_geometric_by_sum(update_value(cfg['qScheduler']['ratio']),
+                                               algo_params['total_queries'], n_iterations)
+        else:
+            raise NotImplementedError()
+
     ps = copy.deepcopy(algo_params)
-    #TODO: edit number of queries as init_num/iterations, k/iterations
     algo_name = ps.pop('algo_name')
     final_data = []
 
-    for i, k in enumerate(k_list):
-        k = min(int(len(search_space)/2), k)
+    # limit queries:
+    i = 0
+    while np.sum(q_list) > ps['total_queries']:
+        q_list[i] -= 1
+        i += 1
+
+    if algo_name == 'pknas':
+        k_list = q_list
+
+    for i in range(n_iterations):
+        k = min(int(len(search_space) / 2), k_list[i])
         k = max(k, 1)
-        print(f'iteration {i}, k value is {k}')
+        m = min(m_list[i], k)
+        q = q_list[i]
+        ps['total_queries'] = q
+        print(f'#####\nIteration {i+1}: k = {k}; m = {m}; q = {q}')
         if k != 1:  # 1 means searching in the final cluster as usual
             search_space.prune(k)
 
-        if algo_name == 'random':
+        if algo_name == 'pknas':
+            data = search_space.generate_complete_dataset()
+        elif algo_name == 'random':
             data = random_search(search_space, **ps)
         elif algo_name == 'evolution':
             data = evolution_search(search_space, **ps)
@@ -108,8 +191,11 @@ def knas(algo_params, search_space, mp, k_list=[400, 100, 100, 50, 50, 1]):
             print('Invalid algorithm name')
             raise NotImplementedError()
         final_data.extend(data)
+        if algo_name == 'pknas':
+            _, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], DEFAULT_LOSS)
+            print(f'\n Validation results: {val_result}\n#####')
         if i < (len(k_list) - 1):  # efficiency
-            search_space.choose_clusters(data, 3)
+            search_space.choose_clusters(data, m, q_list[i+1])
 
     return final_data
 
@@ -122,14 +208,18 @@ def compute_best_test_losses(data, k, total_queries, loss):
     """
     results = []
     val_results = []
+    if len(data) == 0:
+        print('Result output is empty.')
+        return
     for query in range(k, total_queries + k, k):
-        best_arch = sorted(data[:query], key=lambda i:i[loss])[0]
+        best_arch = sorted(data[:query], key=lambda i: i[loss])[0]
         val_error = best_arch['val_loss']
         test_error = best_arch['test_loss']
         results.append((query, test_error))
         val_results.append((query, val_error))
 
     return results, val_results
+
 
 
 def random_search(search_space,
@@ -142,14 +232,14 @@ def random_search(search_space,
     """ 
     random search
     """
-    data = search_space.generate_random_dataset(num=total_queries, 
+    data = search_space.generate_random_dataset(num=total_queries,
                                                 random_encoding=random_encoding,
                                                 cutoff=cutoff,
                                                 deterministic_loss=deterministic)
-    
+
     if verbose:
         top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
-        print('random, query {}, top 5 losses {}'.format(total_queries, top_5_loss))    
+        print('random, query {}, top 5 losses {}'.format(total_queries, top_5_loss))
     return data
 
 
@@ -170,7 +260,7 @@ def evolution_search(search_space,
     """
     regularized evolution
     """
-    data = search_space.generate_random_dataset(num=num_init, 
+    data = search_space.generate_random_dataset(num=num_init,
                                                 random_encoding=random_encoding,
                                                 deterministic_loss=deterministic)
 
@@ -183,14 +273,14 @@ def evolution_search(search_space,
         # evolve the population by mutating the best architecture
         # from a random subset of the population
         sample = np.random.choice(population, tournament_size)
-        best_index = sorted([(i, losses[i]) for i in sample], key=lambda i:i[1])[0][0]
+        best_index = sorted([(i, losses[i]) for i in sample], key=lambda i: i[1])[0][0]
         mutated = search_space.mutate_arch(data[best_index]['spec'],
-                                           mutation_rate=mutation_rate, 
+                                           mutation_rate=mutation_rate,
                                            mutate_encoding=mutate_encoding,
                                            cutoff=cutoff)
         arch_dict = search_space.query_arch(mutated, deterministic=deterministic)
 
-        data.append(arch_dict)        
+        data.append(arch_dict)
         losses.append(arch_dict[loss])
         population.append(len(data) - 1)
 
@@ -200,7 +290,7 @@ def evolution_search(search_space,
                 oldest_index = sorted([i for i in population])[0]
                 population.remove(oldest_index)
             else:
-                worst_index = sorted([(i, losses[i]) for i in population], key=lambda i:i[1])[-1][0]
+                worst_index = sorted([(i, losses[i]) for i in population], key=lambda i: i[1])[-1][0]
                 population.remove(worst_index)
 
         if verbose and (query % k == 0):
@@ -210,13 +300,14 @@ def evolution_search(search_space,
         query += 1
     return data
 
-def bananas(search_space, 
+
+def bananas(search_space,
             metann_params,
-            num_init=DEFAULT_NUM_INIT, 
-            k=DEFAULT_K, 
+            num_init=DEFAULT_NUM_INIT,
+            k=DEFAULT_K,
             loss=DEFAULT_LOSS,
-            total_queries=DEFAULT_TOTAL_QUERIES, 
-            num_ensemble=5, 
+            total_queries=DEFAULT_TOTAL_QUERIES,
+            num_ensemble=5,
             acq_opt_type='mutation',
             num_arches_to_mutate=1,
             max_mutation_rate=1,
@@ -232,10 +323,10 @@ def bananas(search_space,
     Bayesian optimization with a neural predictor
     """
     data = search_space.generate_random_dataset(num=num_init,
-                                                    predictor_encoding=predictor_encoding,
-                                                    random_encoding=random_encoding,
-                                                    deterministic_loss=deterministic,
-                                                    cutoff=cutoff)
+                                                predictor_encoding=predictor_encoding,
+                                                random_encoding=random_encoding,
+                                                deterministic_loss=deterministic,
+                                                cutoff=cutoff)
 
     query = num_init + k
 
@@ -247,7 +338,7 @@ def bananas(search_space,
         # get a set of candidate architectures
         candidates = search_space.get_candidates(data,
                                                  acq_opt_type=acq_opt_type,
-                                                 predictor_encoding=predictor_encoding, 
+                                                 predictor_encoding=predictor_encoding,
                                                  mutate_encoding=mutate_encoding,
                                                  num_arches_to_mutate=num_arches_to_mutate,
                                                  max_mutation_rate=max_mutation_rate,
@@ -269,7 +360,6 @@ def bananas(search_space,
                 net_params = metann_params['ensemble_params'][e]
 
                 train_error += meta_neuralnet.fit(xtrain, ytrain, **net_params)
-        
 
                 # predict the validation loss of the candidate architectures
                 candidate_predictions.append(np.squeeze(meta_neuralnet.predict(xcandidates)))
@@ -283,7 +373,7 @@ def bananas(search_space,
                 After this code was written, an official implementation of BONAS was released
                 at this url: https://github.com/pipilurj/BONAS
                 """
-                
+
                 # train GCN and then make predictions on the test data
                 if search_space.get_type() == 'nasbench_101':
                     # initial_hidden == num_op_choices + 2
@@ -306,7 +396,7 @@ def bananas(search_space,
                 """
                 Note: vae requires installing additional dependencies
                 """
-                
+
                 from vae.train import run_vae
                 seed = np.random.choice(10000)
                 candidate_predictions.append(run_vae(xtrain, xcandidates, seed=seed))
@@ -324,7 +414,6 @@ def bananas(search_space,
 
         # add the k arches with the minimum acquisition function values
         for i in candidate_indices[:k]:
-
             arch_dict = search_space.query_arch(candidates[i]['spec'],
                                                 predictor_encoding=predictor_encoding,
                                                 deterministic=deterministic,
@@ -339,21 +428,22 @@ def bananas(search_space,
 
         # we just finished performing k queries
         query += k
-        
+
     return data
 
+
 def local_search(search_space,
-                num_init=DEFAULT_NUM_INIT,
-                k=DEFAULT_K,
-                loss=DEFAULT_LOSS,
-                random_encoding='adj',
-                mutate_encoding='adj',
-                epochs=0,
-                query_full_nbhd=False,
-                stop_at_minimum=True,
-                total_queries=DEFAULT_TOTAL_QUERIES,
-                deterministic=True,
-                verbose=1):
+                 num_init=DEFAULT_NUM_INIT,
+                 k=DEFAULT_K,
+                 loss=DEFAULT_LOSS,
+                 random_encoding='adj',
+                 mutate_encoding='adj',
+                 epochs=0,
+                 query_full_nbhd=False,
+                 stop_at_minimum=True,
+                 total_queries=DEFAULT_TOTAL_QUERIES,
+                 deterministic=True,
+                 verbose=1):
     """
     local search
     """
@@ -364,7 +454,7 @@ def local_search(search_space,
 
     while True:
         # loop over full runs of local search until queries run out
-        
+
         arch_dicts = []
         while len(arch_dicts) < num_init:
             arch_dict = search_space.query_arch(random_encoding=random_encoding,
@@ -379,8 +469,8 @@ def local_search(search_space,
                 if query >= total_queries:
                     return data
 
-        sorted_arches = sorted([(arch, arch[loss]) for arch in arch_dicts], key=lambda i:i[1])
-        arch_dict = sorted_arches[0][0]                
+        sorted_arches = sorted([(arch, arch[loss]) for arch in arch_dicts], key=lambda i: i[1])
+        arch_dict = sorted_arches[0][0]
 
         while True:
             # loop over iterations of local search until we hit a local minimum
@@ -391,8 +481,8 @@ def local_search(search_space,
             for nbr in nbhd:
                 if search_space.get_hash(nbr) not in query_dict:
                     query_dict[search_space.get_hash(nbr)] = 1
-                    nbr_dict = search_space.query_arch(nbr, 
-                                                       deterministic=deterministic, 
+                    nbr_dict = search_space.query_arch(nbr,
+                                                       deterministic=deterministic,
                                                        epochs=epochs)
                     data.append(nbr_dict)
                     nbhd_dicts.append(nbr_dict)
@@ -406,7 +496,7 @@ def local_search(search_space,
                             break
 
             if not stop_at_minimum:
-                sorted_data = sorted([(arch, arch[loss]) for arch in data], key=lambda i:i[1])
+                sorted_data = sorted([(arch, arch[loss]) for arch in data], key=lambda i: i[1])
                 index = 0
                 while search_space.get_hash(sorted_data[index][0]['spec']) in iter_dict:
                     index += 1
@@ -417,12 +507,13 @@ def local_search(search_space,
                 break
 
             else:
-                sorted_nbhd = sorted([(nbr, nbr[loss]) for nbr in nbhd_dicts], key=lambda i:i[1])
+                sorted_nbhd = sorted([(nbr, nbr[loss]) for nbr in nbhd_dicts], key=lambda i: i[1])
                 arch_dict = sorted_nbhd[0][0]
 
         if verbose:
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
             print('local_search, query {}, top 5 losses {}'.format(query, top_5_loss))
+
 
 def gcn_predictor(search_space,
                   total_queries=DEFAULT_TOTAL_QUERIES,
@@ -442,7 +533,7 @@ def gcn_predictor(search_space,
     acq_size = 50 * total_queries
 
     # generate the training data
-    data = search_space.generate_random_dataset(num=num_init, 
+    data = search_space.generate_random_dataset(num=num_init,
                                                 deterministic_loss=deterministic,
                                                 predictor_encoding='gcn')
     xtrain = [d['encoding'] for d in data]
@@ -455,7 +546,7 @@ def gcn_predictor(search_space,
 
     test_data = search_space.remove_duplicates(test_data, data)
     xtest = [d['encoding'] for d in test_data]
-     
+
     if search_space.get_type() == 'nasbench_101':
         # initial_hidden == num_op_choices + 2
         initial_hidden = 5
@@ -463,7 +554,7 @@ def gcn_predictor(search_space,
         initial_hidden = 7
     else:
         print('gcn predictor is currently not supported for {}'.format(search_space.get_type()))
-        
+
     # train the neural network   
     net = NeuralPredictor(initial_hidden=initial_hidden)
     seed = np.random.choice(10000)
@@ -484,6 +575,7 @@ def gcn_predictor(search_space,
         print('GCN predictor, top 5 losses: {}'.format(top_5_loss))
 
     return data
+
 
 def gp_bayesopt_search(search_space,
                        num_init=DEFAULT_NUM_INIT,
@@ -512,9 +604,8 @@ def gp_bayesopt_search(search_space,
 
     # black-box function that bayesopt will optimize
     def fn(arch):
-        return search_space.query_arch(arch, 
+        return search_space.query_arch(arch,
                                        deterministic=deterministic)[loss]
-
 
     # set all the parameters for the various BayesOpt classes
     fhp = Namespace(fhstr='object', namestr='train')
@@ -532,7 +623,7 @@ def gp_bayesopt_search(search_space,
     data = Namespace()
 
     # Set up initial data
-    init_data = search_space.generate_random_dataset(num=num_init, 
+    init_data = search_space.generate_random_dataset(num=num_init,
                                                      random_encoding=random_encoding,
                                                      deterministic_loss=deterministic)
     data.X = [d['spec'] for d in init_data]
@@ -569,14 +660,13 @@ def pybnn_search(search_space,
                  explore_type='ucb',
                  deterministic=True,
                  verbose=True):
-
     import torch
     from pybnn import DNGO
     from pybnn.bohamiann import Bohamiann
     from pybnn.util.normalization import zero_mean_unit_var_normalization, zero_mean_unit_var_denormalization
 
     def fn(arch):
-        return search_space.query_arch(arch, 
+        return search_space.query_arch(arch,
                                        deterministic=deterministic)[loss]
 
     # set up initial data
@@ -592,12 +682,12 @@ def pybnn_search(search_space,
         # set up data
         x = np.array([d['encoding'] for d in data])
         y = np.array([d[loss] for d in data])
-        scaled_y = np.array([elt/30 for elt in y])
+        scaled_y = np.array([elt / 30 for elt in y])
 
         # get a set of candidate architectures
-        candidates = search_space.get_candidates(data, 
+        candidates = search_space.get_candidates(data,
                                                  acq_opt_type=acq_opt_type,
-                                                 predictor_encoding=predictor_encoding, 
+                                                 predictor_encoding=predictor_encoding,
                                                  cutoff=cutoff,
                                                  deterministic_loss=deterministic)
 
@@ -612,8 +702,8 @@ def pybnn_search(search_space,
             model.train(x, scaled_y, num_steps=10000, num_burn_in_steps=1000, keep_every=50, lr=1e-2)
 
         predictions, var = model.predict(xcandidates)
-        predictions = np.array([pred*30 for pred in predictions])
-        stds = np.sqrt(np.array([v*30 for v in var]))
+        predictions = np.array([pred * 30 for pred in predictions])
+        stds = np.sqrt(np.array([v * 30 for v in var]))
         candidate_indices = acq_fn(np.array(predictions), explore_type, stds=stds)
 
         model = None
@@ -621,7 +711,6 @@ def pybnn_search(search_space,
 
         # add the k arches with the minimum acquisition function values
         for i in candidate_indices[:k]:
-
             arch_dict = search_space.query_arch(candidates[i]['spec'],
                                                 epochs=0,
                                                 predictor_encoding=predictor_encoding,
@@ -636,5 +725,3 @@ def pybnn_search(search_space,
         query += k
 
     return data
-
-
