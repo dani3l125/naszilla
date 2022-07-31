@@ -23,16 +23,41 @@ from naszilla.nas_bench_201.distances import *
 
 default_data_folder = '~/nas_benchmark_datasets/'
 
+
 def to_numpy_array(shared_array, shape):
     '''Create a numpy array backed by a shared memory Array.'''
     arr = np.ctypeslib.as_array(shared_array)
     return arr.reshape(shape)
 
+
 def to_shared_array(arr, ctype):
     shared_array = mp.Array(ctype, arr.size, lock=False)
     return shared_array
 
+
+class MutationTree:
+    def __init__(self, archs_list):
+        self.prefix_dict = {'': set()}
+        for arch in archs_list:
+            path = Cell201(arch).get_op_list()
+            key = ''
+            for node in path:
+                self.prefix_dict[key].add(node)
+                key += node
+                if key not in self.prefix_dict.keys():
+                    self.prefix_dict[key] = set()
+
+    def ops(self, path=[]):
+        path = ''.join(path)
+        if not path in self.prefix_dict.keys():
+            return []
+        return list(self.prefix_dict[path])
+
+
 class Nasbench:
+
+    def is_knas(self):
+        return False
 
     def get_cell(self, arch=None):
         return None
@@ -106,6 +131,7 @@ class Nasbench:
         test for isomorphisms using a hash map of path indices
         use patience_factor to avoid infinite loops
         """
+        num = min(num, len(self.nasbench))
         data = []
         dic = {}
         tries_left = num * patience_factor
@@ -139,7 +165,8 @@ class Nasbench:
                        predictor_encoding=None,
                        mutate_encoding='adj',
                        loss='val_loss',
-                       allow_isomorphisms=False,
+                       allow_isomorphisms=True,
+                       # TODO: handle isomorphisms
                        patience_factor=5,
                        deterministic_loss=True,
                        num_arches_to_mutate=1,
@@ -366,7 +393,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=False):
+                 is_debug=True):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
@@ -409,17 +436,19 @@ class Nasbench201(Nasbench):
 
     def generate_complete_dataset(self):
         data = []
-        if len(data) == 0:
-            print('1')
+        # if len(data) == 0:
+        #     print('1')
         for arch in KNasbench201.nasbench.meta_archs:
             data.append(self.query_arch(arch))
         return data
+
 
 class KNasbench201(Nasbench201):
     _is_updated_distances = False
     _distances = None
     _medoid_indices = None
     old_nasbench = None
+    mutation_tree = None
 
     def __init__(self,
                  dataset='cifar10',
@@ -443,6 +472,9 @@ class KNasbench201(Nasbench201):
     def __len__(self):
         return len(self.nasbench)
 
+    def is_knas(self):
+        return True
+
     @property
     def distances(self):
         start = time.time()
@@ -455,7 +487,8 @@ class KNasbench201(Nasbench201):
         cells_l = []
         for i in range(len(self.nasbench)):
             cells_l.append(
-                self.get_cell(KNasbench201.nasbench.meta_archs[KNasbench201.nasbench.evaluated_indexes.index(i)],  init=True))
+                self.get_cell(KNasbench201.nasbench.meta_archs[KNasbench201.nasbench.evaluated_indexes.index(i)],
+                              init=True))
 
         if self.dist_type == 'real':
             values = np.zeros(size)
@@ -477,12 +510,14 @@ class KNasbench201(Nasbench201):
                         for j in range(i, len(self.nasbench)):
                             if self.dist_type == 'real':
                                 distances[i, j] = distances[j, i] = \
-                                self.nasbench.query_meta_info_by_index(
-                                    self.nasbench.query_index_by_arch(cells_l[i].string)).get_metrics(self.dataset,
-                                                                                                      'train')['accuracy'] - \
-                                self.nasbench.query_meta_info_by_index(
-                                    self.nasbench.query_index_by_arch(cells_l[j].string)).get_metrics(self.dataset,
-                                                                                                      'train')['accuracy']
+                                    self.nasbench.query_meta_info_by_index(
+                                        self.nasbench.query_index_by_arch(cells_l[i].string)).get_metrics(self.dataset,
+                                                                                                          'train')[
+                                        'accuracy'] - \
+                                    self.nasbench.query_meta_info_by_index(
+                                        self.nasbench.query_index_by_arch(cells_l[j].string)).get_metrics(self.dataset,
+                                                                                                          'train')[
+                                        'accuracy']
                             else:
                                 distances[i, j] = distances[j, i] = cells_l[i].distance(
                                     cells_l[j], self.dist_type, self)
@@ -554,7 +589,6 @@ class KNasbench201(Nasbench201):
         for t in threads:
             t.join()
 
-
     def prune(self, k=20):
         self.ratio = k / len(KNasbench201.nasbench)
         start = time.time()
@@ -568,14 +602,19 @@ class KNasbench201(Nasbench201):
         KNasbench201._medoid_indices = kmedoids.medoid_indices_
         self.cluster_sizes = np.bincount(self._labels)
         # copy_thread.join()
-        remove_indices = list(set(KNasbench201.nasbench.evaluated_indexes) - set(kmedoids.medoid_indices_))
+        remove_indices = list(set(KNasbench201.nasbench.evaluated_indexes) -
+                              set(np.array(KNasbench201.nasbench.evaluated_indexes)[kmedoids.medoid_indices_]))
         self.remove_by_indices(remove_indices)
         # self.parallel_remove(remove_indices)
+        KNasbench201.mutation_tree = MutationTree(KNasbench201.nasbench.meta_archs)
 
         print(f'\nSpace updated to centers. total time: {time.time() - start}\n')
 
     def cluster_by_arch(self, arch):
-        return self._labels[KNasbench201.nasbench.archstr2index[arch]]
+        if isinstance(arch, dict):
+            # _labels indexes are incorrext
+            return self._labels[KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch['string']])]
+        return self._labels[KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch])]
 
     def choose_clusters(self, data, m=0, k=0):
         start = time.time()
@@ -584,14 +623,15 @@ class KNasbench201(Nasbench201):
         if m == 0:
             ratios = np.zeros(len(best_dicts))
             for i, best_dict in enumerate(best_dicts):
-                ratios[i] = ratios[i-1] + self.cluster_sizes[self.cluster_by_arch(best_dict['spec'])] if i != 0 else self.cluster_sizes[self.cluster_by_arch(best_dict['spec'])]
+                ratios[i] = ratios[i - 1] + self.cluster_sizes[self.cluster_by_arch(best_dict['spec'])] if i != 0 else \
+                    self.cluster_sizes[self.cluster_by_arch(best_dict['spec'])]
             ratios = k / ratios
             m = 1 + np.argmin(np.abs(ratios - self.ratio))
             if m >= len(best_dicts) / 2:
                 # remove at least half of the data each operation
                 m = 1 + np.argmin(np.abs(ratios - 0.5))
                 print(f'm and r were hard code updated')
-            print(f'Automaticaly chosen m ={m}. original ratio is {self.ratio}, new ratio is {ratios[m-1]}')
+            print(f'Automaticaly chosen m ={m}. original ratio is {self.ratio}, new ratio is {ratios[m - 1]}')
             self.ratio = ratios[m - 1]
         m = max(m, 1)
         KNasbench201.nasbench = KNasbench201.old_nasbench
@@ -611,21 +651,81 @@ class KNasbench201(Nasbench201):
         if not arch:
             return Cell201
 
-        if not cls.nasbench is None and not init:
-            # if not cls._is_updated_distances:
-            #     raise Exception('Distances are not updated properly.')
-
-            # Choose nearest sample in new set every time
-            idx = cls.old_nasbench.archstr2index[arch] if isinstance(arch, str) else cls.old_nasbench.archstr2index[
-                arch['string']]
-            candidates = cls._distances[idx][np.array(cls.nasbench.evaluated_indexes).astype(int)]
-            nearest_idx = np.argmin(candidates)  # this is the index in evaluated indexes list
-            arch = cls.nasbench.meta_archs[nearest_idx]
+        # if not cls.nasbench is None and not init:
+        #     # if not cls._is_updated_distances:
+        #     #     raise Exception('Distances are not updated properly.')
+        #
+        #     # Choose nearest sample in new set every time
+        #     idx = cls.old_nasbench.archstr2index[arch] if isinstance(arch, str) else cls.old_nasbench.archstr2index[
+        #         arch['string']]
+        #     candidates = cls._distances[idx][np.array(cls.nasbench.evaluated_indexes).astype(int)]
+        #     nearest_idx = np.argmin(candidates)  # this is the index in evaluated indexes list
+        #     arch = cls.nasbench.meta_archs[nearest_idx]
 
         if isinstance(arch, str):
             return Cell201(arch)
         else:
             return Cell201(**arch)
+
+    def mutate_arch(self,
+                    arch,
+                    mutation_rate=1.0,
+                    mutate_encoding='adj',
+                    cutoff=0):
+
+        return self.get_cell(arch).mutate(self.nasbench,
+                                          mutation_rate=mutation_rate,
+                                          mutate_encoding=mutate_encoding,
+                                          index_hash=self.index_hash,
+                                          cutoff=cutoff,
+                                          mutation_tree=self.mutation_tree)
+
+    def get_arch_list(self,
+                      aux_file_path,
+                      distance=None,
+                      iteridx=0,
+                      num_top_arches=5,
+                      max_edits=20,
+                      num_repeats=5,
+                      random_encoding='adj',
+                      verbose=0):
+        # Method used for gp_bayesopt
+
+        # load the list of architectures chosen by bayesopt so far
+        base_arch_list = pickle.load(open(aux_file_path, 'rb'))
+        top_arches = [archtuple[0] for archtuple in base_arch_list[:num_top_arches]]
+        if verbose:
+            top_5_loss = [archtuple[1][0] for archtuple in base_arch_list[:min(5, len(base_arch_list))]]
+            print('top 5 val losses {}'.format(top_5_loss))
+
+        # perturb the best k architectures
+        dic = {}
+        for archtuple in base_arch_list:
+            path_indices = self.get_cell(archtuple[0]).get_path_indices()
+            dic[path_indices] = 1
+
+        new_arch_list = []
+        for arch in top_arches:
+            for edits in range(1, max_edits):
+                for _ in range(num_repeats):
+                    # perturbation = Cell(**arch).perturb(self.nasbench, edits)
+                    perturbation = self.get_cell(arch).mutate(self.nasbench, edits, mutation_tree=self.mutation_tree)
+                    path_indices = self.get_cell(perturbation).get_path_indices()
+                    if path_indices not in dic:
+                        dic[path_indices] = 1
+                        new_arch_list.append(perturbation)
+
+        # make sure new_arch_list is not empty
+        while len(new_arch_list) == 0:
+            for _ in range(100):
+                arch = self.get_cell().random_cell(self.nasbench, random_encoding=random_encoding)
+                path_indices = self.get_cell(arch).get_path_indices()
+                if path_indices not in dic:
+                    dic[path_indices] = 1
+                    new_arch_list.append(arch)
+
+        return new_arch_list
+
 
 
 class Nasbench301(Nasbench):

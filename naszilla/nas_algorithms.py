@@ -155,13 +155,16 @@ def knas(algo_params, search_space, mp, cfg):
 
     for i in range(n_iterations):
         k = min(int(len(search_space) / 2), k_list[i])
-        k = max(k, 1)
+        k = max(k, 10)
         m = min(m_list[i], k)
         q = q_list[i]
         ps['total_queries'] = q
         print(f'#####\nIteration {i+1}: k = {k}; m = {m}; q = {q}')
-        if k != 1:  # 1 means searching in the final cluster as usual
+        if k != 1 and k < len(search_space):
+            # 1 means searching in the final cluster as usual
             search_space.prune(k)
+
+
 
         if algo_name == 'pknas':
             data = search_space.generate_complete_dataset()

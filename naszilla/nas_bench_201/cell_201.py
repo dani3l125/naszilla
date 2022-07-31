@@ -185,18 +185,41 @@ class Cell201:
                mutate_encoding='adj',
                index_hash=None,
                cutoff=30,
-               patience=5000):
+               patience=5000,
+               mutation_tree=None):
+
+        is_knas = mutation_tree is not None
         p = 0
         if mutate_encoding == 'adj':
             ops = self.get_op_list()
             new_ops = []
             # keeping mutation_prob consistent with nasbench_101
             mutation_prob = mutation_rate / (OP_SPOTS - 2)
+            mutated = False
 
             for i, op in enumerate(ops):
                 if random.random() < mutation_prob:
-                    available = [o for o in OPS if o != op]
+                    mutated = True
+                    if is_knas:
+                        available = [o for o in mutation_tree.ops(new_ops) if o != op]
+                        if not len(available):
+                            print(f'%%%No mutations available in depth {i+1}')
+                            if op not in mutation_tree.ops(new_ops):
+                                print('Original operation does not match')
+                            available = [op]
+                    else:
+                        available = [o for o in OPS if o != op]
                     new_ops.append(random.choice(available))
+                elif is_knas:
+                    if mutated:
+                        if op in mutation_tree.ops(new_ops):
+                            available = [op]
+                        else:
+                            print("Force mutation")
+                            available = mutation_tree.ops(new_ops)
+                        new_ops.append(random.choice(available))
+                    else:
+                        new_ops.append(op)
                 else:
                     new_ops.append(op)
 
@@ -215,7 +238,13 @@ class Cell201:
             new_ops = ops.copy()
 
             for idx in blueprint:
-                available = [o for o in OPS if o != ops[idx]]
+                if is_knas:
+                    available = [o for o in mutation_tree.ops(new_ops) if o != ops[idx]]
+                    if not len(available):
+                        print(f'%%%BLUEPRINT;No mutations available in depth {i + 1}')
+                        available = [ops[idx]]
+                else:
+                    available = [o for o in OPS if o != ops[idx]]
                 new_ops[idx] = np.random.choice(available)
 
             new_arch = {'string':self.get_string_from_ops(new_ops)}
