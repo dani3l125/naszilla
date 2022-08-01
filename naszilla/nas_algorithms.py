@@ -13,6 +13,7 @@ from naszilla.meta_neural_net import MetaNeuralnet
 from naszilla.bo.bo.probo import ProBO
 from naszilla.gcn.model import NeuralPredictor
 from naszilla.gcn.train_gcn import fit, predict
+from nas_benchmarks import MutationTree
 
 # default parameters for the NAS algorithms
 DEFAULT_NUM_INIT = 10
@@ -92,80 +93,34 @@ def schedule_geometric_by_sum(ratio, s, n):
     return np.round(np.geomspace(first, first * r_n / ratio, n))[::-1].astype(int)
 
 
-def knas(algo_params, search_space, mp, cfg):
+def knas(algo_params, search_space, mp, cfg, c=2):
     # run nas algorithm
-    def update_value(value):
-        if value < 0:
-            value = - (len(search_space) / value)
-        return value
-
     n_iterations = cfg['iterations']
-
-    # k scheduler
-    if cfg['kScheduler']['type'] == 'manual':
-        k_list = np.array(cfg['kScheduler']['manual'])
-    else:
-        first = update_value(cfg['kScheduler']['first'])
-        last = update_value(cfg['kScheduler']['last'])
-        if cfg['kScheduler']['type'] == 'linear':
-            k_list = schedule_linear(first, last, n_iterations)
-        elif cfg['kScheduler']['type'] == 'geometric':
-            k_list = schedule_geometric(first, last, n_iterations)
-        else:
-            raise NotImplementedError()
-
-    # m scheduler
-    if cfg['mScheduler']['type'] == 'manual':
-        m_list = np.array(cfg['mScheduler']['manual'])
-    else:
-        first = update_value(cfg['mScheduler']['first'])
-        last = update_value(cfg['mScheduler']['last'])
-        if cfg['mScheduler']['type'] == 'linear':
-            m_list = schedule_linear(first, last, n_iterations)
-        elif cfg['mScheduler']['type'] == 'geometric':
-            m_list = schedule_geometric(first, last, n_iterations)
-        else:
-            raise NotImplementedError()
-
-    # q scheduler
-    if cfg['qScheduler']['type'] == 'manual':
-        m_list = np.array(cfg['qScheduler']['manual'])
-    else:
-        first = update_value(cfg['qScheduler']['first'])
-        if cfg['qScheduler']['type'] == 'linear':
-            q_list = schedule_linear_by_sum(first, algo_params['total_queries'], n_iterations)
-        elif cfg['qScheduler']['type'] == 'geometric':
-            q_list = schedule_geometric_by_sum(update_value(cfg['qScheduler']['ratio']),
-                                               algo_params['total_queries'], n_iterations)
-        else:
-            raise NotImplementedError()
+    total_q = algo_params['total_queries']
+    q_sum = 0
+    space_size = len(search_space)
 
     ps = copy.deepcopy(algo_params)
     algo_name = ps.pop('algo_name')
     final_data = []
 
-    # limit queries:
-    i = 0
-    while np.sum(q_list) > ps['total_queries']:
-        q_list[i] -= 1
-        i += 1
-
-    if algo_name == 'pknas':
-        k_list = q_list
-
     for i in range(n_iterations):
-        k = min(int(len(search_space) / 2), k_list[i])
-        if k != 1:
-            k = max(k, 30)
-        m = min(m_list[i], k)
-        q = q_list[i]
+        # Case of checking complete space:
+        if space_size <= total_q - q_sum:
+            k = -1
+            q = space_size
+        else:
+            k = int(np.ceil(np.log2(space_size)))
+            q = k
+            m = int(max(1, np.round(k/c)))
+            q_sum += q
+
         ps['total_queries'] = q
         print(f'#####\nIteration {i+1}: k = {k}; m = {m}; q = {q}')
-        if k != 1 and k < len(search_space):
-            # 1 means searching in the final cluster as usual
+
+        if k != -1:
+            # -1 means searching in the final cluster as usual
             search_space.prune(k)
-
-
 
         if algo_name == 'pknas':
             data = search_space.generate_complete_dataset()
@@ -174,7 +129,7 @@ def knas(algo_params, search_space, mp, cfg):
         elif algo_name == 'evolution':
             data = evolution_search(search_space, **ps)
         elif algo_name == 'bananas':
-            data = bananas(search_space, mp, **ps, predictor='bananas')
+            data = bananas(search_space, mp, **ps, predictor='bananas', mutation_tree=MutationTree(search_space.nasbench.meta_archs))
         elif algo_name == 'bonas':
             data = bananas(search_space, mp, **ps, predictor='gcn', predictor_encoding='gcn')
         elif algo_name == 'gp_bayesopt':
@@ -198,8 +153,12 @@ def knas(algo_params, search_space, mp, cfg):
         if algo_name == 'pknas':
             _, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], DEFAULT_LOSS)
             print(f'\n Validation results: {val_result}\n#####')
-        if i < (len(k_list) - 1) and k != 1:  # efficiency
-            search_space.choose_clusters(data, m, q_list[i+1])
+
+        if k != -1:  # efficiency
+            search_space.choose_clusters(data, m)
+        else:
+            return final_data
+        space_size = len(search_space)
 
     return final_data
 
@@ -322,7 +281,8 @@ def bananas(search_space,
             mutate_encoding='adj',
             random_encoding='adj',
             deterministic=True,
-            verbose=1):
+            verbose=1,
+            mutation_tree=None):
     """
     Bayesian optimization with a neural predictor
     """
@@ -339,6 +299,9 @@ def bananas(search_space,
         xtrain = np.array([d['encoding'] for d in data])
         ytrain = np.array([d[loss] for d in data])
 
+        if len(set(d['spec']['string'] for d in data)) >= len(search_space):
+            return data
+
         # get a set of candidate architectures
         candidates = search_space.get_candidates(data,
                                                  acq_opt_type=acq_opt_type,
@@ -348,7 +311,8 @@ def bananas(search_space,
                                                  max_mutation_rate=max_mutation_rate,
                                                  loss=loss,
                                                  deterministic_loss=deterministic,
-                                                 cutoff=cutoff)
+                                                 cutoff=cutoff,
+                                                 mutation_tree=mutation_tree)
 
         xcandidates = np.array([c['encoding'] for c in candidates])
         candidate_predictions = []

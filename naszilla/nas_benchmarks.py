@@ -122,7 +122,7 @@ class Nasbench:
                                 random_encoding='adj',
                                 deterministic_loss=True,
                                 patience_factor=5,
-                                allow_isomorphisms=False,
+                                allow_isomorphisms=True,
                                 cutoff=0,
                                 max_edges=None,
                                 max_nodes=None):
@@ -165,14 +165,15 @@ class Nasbench:
                        predictor_encoding=None,
                        mutate_encoding='adj',
                        loss='val_loss',
-                       allow_isomorphisms=True,
+                       allow_isomorphisms=False,
                        # TODO: handle isomorphisms
                        patience_factor=5,
                        deterministic_loss=True,
                        num_arches_to_mutate=1,
                        max_mutation_rate=1,
                        train=False,
-                       cutoff=0):
+                       cutoff=0,
+                       mutation_tree=None):
         """
         Creates a set of candidate architectures with mutated and/or random architectures
         """
@@ -204,7 +205,8 @@ class Nasbench:
                     for rate in range(1, max_mutation_rate + 1):
                         mutated = self.mutate_arch(arch,
                                                    mutation_rate=rate,
-                                                   mutate_encoding=mutate_encoding)
+                                                   mutate_encoding=mutate_encoding,
+                                                   mutation_tree=mutation_tree)
                         arch_dict = self.query_arch(mutated,
                                                     train=train,
                                                     predictor_encoding=predictor_encoding,
@@ -448,7 +450,7 @@ class KNasbench201(Nasbench201):
     _distances = None
     _medoid_indices = None
     old_nasbench = None
-    mutation_tree = None
+    # mutation_tree = None
 
     def __init__(self,
                  dataset='cifar10',
@@ -606,7 +608,7 @@ class KNasbench201(Nasbench201):
                               set(np.array(KNasbench201.nasbench.evaluated_indexes)[kmedoids.medoid_indices_]))
         self.remove_by_indices(remove_indices)
         # self.parallel_remove(remove_indices)
-        KNasbench201.mutation_tree = MutationTree(KNasbench201.nasbench.meta_archs)
+        # self.mutation_tree = MutationTree(KNasbench201.nasbench.meta_archs)
 
         print(f'\nSpace updated to centers. total time: {time.time() - start}\n')
 
@@ -616,24 +618,10 @@ class KNasbench201(Nasbench201):
             return self._labels[KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch['string']])]
         return self._labels[KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch])]
 
-    def choose_clusters(self, data, m=0, k=0):
+    def choose_clusters(self, data, m):
         start = time.time()
         # When m is 0, choose it automatically to save query-data ratio
         best_dicts = sorted(data, key=lambda x: x['val_loss'])
-        if m == 0:
-            ratios = np.zeros(len(best_dicts))
-            for i, best_dict in enumerate(best_dicts):
-                ratios[i] = ratios[i - 1] + self.cluster_sizes[self.cluster_by_arch(best_dict['spec'])] if i != 0 else \
-                    self.cluster_sizes[self.cluster_by_arch(best_dict['spec'])]
-            ratios = k / ratios
-            m = 1 + np.argmin(np.abs(ratios - self.ratio))
-            if m >= len(best_dicts) / 2:
-                # remove at least half of the data each operation
-                m = 1 + np.argmin(np.abs(ratios - 0.5))
-                print(f'm and r were hard code updated')
-            print(f'Automaticaly chosen m ={m}. original ratio is {self.ratio}, new ratio is {ratios[m - 1]}')
-            self.ratio = ratios[m - 1]
-        m = max(m, 1)
         KNasbench201.nasbench = KNasbench201.old_nasbench
         best_dicts = best_dicts[:m]  # there is val_loss also.
         remove_indices = set(KNasbench201.nasbench.evaluated_indexes)
@@ -671,14 +659,15 @@ class KNasbench201(Nasbench201):
                     arch,
                     mutation_rate=1.0,
                     mutate_encoding='adj',
-                    cutoff=0):
+                    cutoff=0,
+                    mutation_tree=None):
 
         return self.get_cell(arch).mutate(self.nasbench,
                                           mutation_rate=mutation_rate,
                                           mutate_encoding=mutate_encoding,
                                           index_hash=self.index_hash,
                                           cutoff=cutoff,
-                                          mutation_tree=self.mutation_tree)
+                                          mutation_tree=mutation_tree)
 
     def get_arch_list(self,
                       aux_file_path,

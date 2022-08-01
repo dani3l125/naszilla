@@ -1,4 +1,4 @@
-iterations: 3
+iterations: 20
 
 distance: 'lev'  # Choose: real, lev, adj, path, nasbot
 
@@ -8,19 +8,19 @@ fullKnas: False  # completely deterministic or not
 
 kScheduler:
   type: "geometric"  # Choose: linear, geometric, manual
-  first: 400  # can be set to -c: such that maxVal is size/c
-  last: 20  # can be set to -c: such that mivVal is size/c
+  first: 1000  # can be set to -c: such that maxVal is size/c
+  last: 1  # can be set to -c: such that mivVal is size/c
   manual: []
 
 mScheduler:
-  type: "manual"
-  first: 3  # can be set to -c
+  type: "linear"
+  first: 50  # can be set to -c
   last: 1  # can be set to -c
-  manual: [10,10,10]
+  manual: [10,10,10, 5, 5]
 
 qScheduler:
   type: "linear"
-  first: 30  # can be set to -c, not used in case of geometric
+  first: 60  # can be set to -c, not used in case of geometric
   ratio: 1.5
   manual: []
 
