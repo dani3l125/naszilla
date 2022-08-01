@@ -393,7 +393,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=True):
+                 is_debug=False):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None

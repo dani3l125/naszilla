@@ -203,7 +203,7 @@ class Cell201:
                     if is_knas:
                         available = [o for o in mutation_tree.ops(new_ops) if o != op]
                         if not len(available):
-                            print(f'%%%No mutations available in depth {i+1}')
+                            # print(f'%%%No mutations available in depth {i+1}')
                             if op not in mutation_tree.ops(new_ops):
                                 print('Original operation does not match')
                             available = [op]
@@ -211,15 +211,12 @@ class Cell201:
                         available = [o for o in OPS if o != op]
                     new_ops.append(random.choice(available))
                 elif is_knas:
-                    if mutated:
-                        if op in mutation_tree.ops(new_ops):
-                            available = [op]
-                        else:
-                            print("Force mutation")
-                            available = mutation_tree.ops(new_ops)
-                        new_ops.append(random.choice(available))
+                    if op in mutation_tree.ops(new_ops):
+                        available = [op]
                     else:
-                        new_ops.append(op)
+                        # print("Force mutation")
+                        available = mutation_tree.ops(new_ops)
+                    new_ops.append(random.choice(available))
                 else:
                     new_ops.append(op)
 

@@ -155,7 +155,8 @@ def knas(algo_params, search_space, mp, cfg):
 
     for i in range(n_iterations):
         k = min(int(len(search_space) / 2), k_list[i])
-        k = max(k, 10)
+        if k != 1:
+            k = max(k, 30)
         m = min(m_list[i], k)
         q = q_list[i]
         ps['total_queries'] = q
@@ -197,7 +198,7 @@ def knas(algo_params, search_space, mp, cfg):
         if algo_name == 'pknas':
             _, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], DEFAULT_LOSS)
             print(f'\n Validation results: {val_result}\n#####')
-        if i < (len(k_list) - 1):  # efficiency
+        if i < (len(k_list) - 1) and k != 1:  # efficiency
             search_space.choose_clusters(data, m, q_list[i+1])
 
     return final_data
