@@ -42,7 +42,8 @@ def run_experiments(args, save_dir):
             search_space = Nasbench101(mf=mf)
         elif ss == 'nasbench_201':
             search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
-                KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'])
+                KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
+                             compression_method=cfg['compression_method'], compression_args=cfg['k_means_coreset_args'])
         elif ss == 'nasbench_301':
             if args.k_alg:
                 print('K alg not supported yet!')
@@ -91,6 +92,13 @@ def run_experiments(args, save_dir):
         with open(filename, 'wb') as f:
             pickle.dump([algorithm_params, metann_params, results, walltimes, run_data, val_results], f)
             f.close()
+
+        result_mean = np.zeros_like(results[0].T[0])
+        for result in results:
+            result_mean = np.add(result_mean, result.T[1])
+        result_mean /= len(results)
+        np.save('bananas.npy', result_mean)
+
 
 def main(args):
 

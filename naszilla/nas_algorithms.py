@@ -93,8 +93,9 @@ def schedule_geometric_by_sum(ratio, s, n):
     return np.round(np.geomspace(first, first * r_n / ratio, n))[::-1].astype(int)
 
 
-def knas(algo_params, search_space, mp, cfg, c=2):
+def knas(algo_params, search_space, mp, cfg):
     # run nas algorithm
+
     n_iterations = cfg['iterations']
     total_q = algo_params['total_queries']
     q_sum = 0
@@ -104,23 +105,40 @@ def knas(algo_params, search_space, mp, cfg, c=2):
     algo_name = ps.pop('algo_name')
     final_data = []
 
+    if algo_name == 'bananas':
+        meta_neuralnet = MetaNeuralnet()
+
     for i in range(n_iterations):
         # Case of checking complete space:
-        if space_size <= total_q - q_sum:
+        if (space_size <= total_q - q_sum and cfg['qAutofill']) or (cfg['compression_method'] == 'k_means_coreset' and space_size < 30):
             k = -1
             q = space_size
+            m = -1
         else:
-            k = int(np.ceil(np.log2(space_size)))
-            q = k
-            m = int(max(1, np.round(k/c)))
-            q_sum += q
-
-        ps['total_queries'] = q
-        print(f'#####\nIteration {i+1}: k = {k}; m = {m}; q = {q}')
+            if cfg['kScheduler']['type'] == 'log':
+                k = int(np.ceil(np.log2(space_size)))
+                q = k
+                m = int(max(1, np.round(k/cfg['m_c'])))
+            elif cfg['kScheduler']['type'] == 'geometric':
+                k = len(search_space) // cfg['kScheduler']['constant']
+                q = min(30, k)  # TODO: schedule q properly (for efficiency)
+                m = q // cfg['m_c']
+            elif cfg['kScheduler']['type'] == 'manual':
+                k = min(cfg['kScheduler']['manual'][i], len(search_space))
+                q = min(30, k)  # TODO: schedule q properly (for efficiency)
+                m = q // cfg['m_c']
 
         if k != -1:
             # -1 means searching in the final cluster as usual
-            search_space.prune(k)
+            k = search_space.prune(k)
+            if cfg['compression_method'] == 'k_means_coreset':
+                q = min(30, k)  # TODO: schedule q properly (for efficiency)
+                m = q // cfg['m_c']
+
+
+        ps['total_queries'] = q
+        q_sum += q
+        print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}')
 
         if algo_name == 'pknas':
             data = search_space.generate_complete_dataset()
@@ -129,7 +147,9 @@ def knas(algo_params, search_space, mp, cfg, c=2):
         elif algo_name == 'evolution':
             data = evolution_search(search_space, **ps)
         elif algo_name == 'bananas':
-            data = bananas(search_space, mp, **ps, predictor='bananas', mutation_tree=MutationTree(search_space.nasbench.meta_archs))
+            data = bananas(search_space, mp, **ps, predictor='bananas',
+                           mutation_tree=MutationTree(search_space.nasbench.meta_archs),
+                           meta_neuralnet=meta_neuralnet)
         elif algo_name == 'bonas':
             data = bananas(search_space, mp, **ps, predictor='gcn', predictor_encoding='gcn')
         elif algo_name == 'gp_bayesopt':
@@ -282,10 +302,12 @@ def bananas(search_space,
             random_encoding='adj',
             deterministic=True,
             verbose=1,
-            mutation_tree=None):
+            mutation_tree=None,
+            meta_neuralnet=None):
     """
     Bayesian optimization with a neural predictor
     """
+    num_init = min(num_init, total_queries // 2)
     data = search_space.generate_random_dataset(num=num_init,
                                                 predictor_encoding=predictor_encoding,
                                                 random_encoding=random_encoding,
@@ -324,7 +346,8 @@ def bananas(search_space,
         for e in range(num_ensemble):
 
             if predictor == 'bananas':
-                meta_neuralnet = MetaNeuralnet()
+                if meta_neuralnet is None:
+                    meta_neuralnet = MetaNeuralnet()
                 net_params = metann_params['ensemble_params'][e]
 
                 train_error += meta_neuralnet.fit(xtrain, ytrain, **net_params)
