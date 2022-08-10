@@ -11,6 +11,7 @@ import ctypes
 
 from sklearn_extra.cluster import KMedoids
 from torch import load
+from scipy.spatial import distance_matrix
 
 from nasbench import api
 from nas_201_api import NASBench201API as API
@@ -20,6 +21,7 @@ from naszilla.nas_bench_101.cell_101 import Cell101
 from naszilla.nas_bench_201.cell_201 import Cell201
 from naszilla.nas_bench_301.cell_301 import Cell301
 from naszilla.nas_bench_201.distances import *
+from naszilla.coresets.k_means_coreset_via_robust_median import knas_coreset
 
 default_data_folder = '~/nas_benchmark_datasets/'
 
@@ -107,7 +109,8 @@ class Nasbench:
                     arch,
                     mutation_rate=1.0,
                     mutate_encoding='adj',
-                    cutoff=0):
+                    cutoff=0,
+                    mutation_tree=None):
 
         return self.get_cell(arch).mutate(self.nasbench,
                                           mutation_rate=mutation_rate,
@@ -409,6 +412,9 @@ class Nasbench201(Nasbench):
         elif version == '1_1':
             Nasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
 
+    def __len__(self):
+        return len(self.nasbench)
+
     def get_type(self):
         return 'nasbench_201'
 
@@ -448,26 +454,34 @@ class Nasbench201(Nasbench):
 class KNasbench201(Nasbench201):
     _is_updated_distances = False
     _distances = None
-    _medoid_indices = None
+    _coreset_indexes = None
     old_nasbench = None
+    _points = None
+
     # mutation_tree = None
 
     def __init__(self,
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 dim=100,
+                 dim=10,
                  n_threads=16,
-                 dist_type='lev'):
+                 dist_type='lev',
+                 compression_method='k_medoids',
+                 compression_args=None,
+                 points_alg='evd'):
         super().__init__(dataset, data_folder, version)
         self.dim = dim
         self.n_threads = n_threads
         self._is_updated_points = False
-        self._points = None
         self.dist_type = dist_type
         self.counter = 0
         self.ratio = -1
         self.cluster_sizes = None
+        self.points_alg = points_alg
+        self.compression_method = compression_method
+        if self.compression_method == 'k_means_coreset':
+            self.compression_kwargs = compression_args
 
         self._labels = np.zeros(len(self.nasbench))
 
@@ -541,19 +555,48 @@ class KNasbench201(Nasbench201):
 
     @property
     def points(self):
+        '''
+            Returns a matrix where each row is a point approximation
+        '''
         if self._is_updated_points:
             return self._points
-        # TODO: check tile dimentions order
-        m_row = np.tile(self.distances[0] ** 2, (1, self.distances.shape[0]))
-        m_col = np.tile(self.distances.T[0] ** 2, (1, self.distances.shape[0])).T
-        M = (self.distances ** 2 + m_row + m_col) / 2
 
-        U, S, V = np.linalg.svd(M)
-        X = U @ np.sqrt(S)
+        start = time.time()
 
-        self._is_updated_points = True
-        self._points = X[:, :self.dim + 1]
-        return self._points
+        dist_matrix = self.distances[np.array(self.nasbench.evaluated_indexes)].T[
+            np.array(self.nasbench.evaluated_indexes)]
+
+        if self.points_alg == 'evd':
+            m_row = np.tile(dist_matrix[0] ** 2, (dist_matrix.shape[0], 1))
+            m_col = np.tile(dist_matrix.T[0] ** 2, (dist_matrix.shape[0], 1)).T
+            M = (dist_matrix ** 2 + m_row + m_col) / 2
+
+            w, v = np.linalg.eigh(M.astype(np.float64))
+            sign = np.tile(np.sign(w), (w.shape[0], 1))
+            w_sqrt = np.tile(np.sqrt(np.abs(w.real)), (w.shape[0], 1))
+            X = v.real * w_sqrt * sign
+
+            self.dim = min(self.dim, M.shape[0])
+            ind = np.argpartition(np.abs(w), -self.dim)[-self.dim:]
+            KNasbench201._points = X.T[ind].T
+
+        elif self.points_alg == 'icba':
+            point2 = np.zeros(self.dim)
+            point2[0] = dist_matrix[0][1]
+            points = [np.zeros(self.dim), point2]
+            d_centers = np.zeros((1, 1))  # Insert first and second points
+            for m in range(1, len(self.nasbench)):
+                R = dist_matrix[:m+1, m]
+                d_m = distance_matrix(points[m], np.array(points))
+                intersections = []
+
+
+
+        else:
+            raise NotImplementedError('Invalid points computation algorithm')
+
+        print(f'Points computed. time: {time.time() - start}')
+        return KNasbench201._points
 
     def get_type(self):
         return 'knasbench_201'
@@ -592,30 +635,42 @@ class KNasbench201(Nasbench201):
             t.join()
 
     def prune(self, k=20):
-        self.ratio = k / len(KNasbench201.nasbench)
         start = time.time()
         # TODO: debug deepcopy paralelizing
         # copy_thread = Process(target=KNasbench201.copy_bench)
         # copy_thread.start()
         KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
-        kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(  # Take distances from current cluster
-            self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes])
-        self._labels = kmedoids.labels_
-        KNasbench201._medoid_indices = kmedoids.medoid_indices_
-        self.cluster_sizes = np.bincount(self._labels)
-        # copy_thread.join()
-        remove_indices = list(set(KNasbench201.nasbench.evaluated_indexes) -
-                              set(np.array(KNasbench201.nasbench.evaluated_indexes)[kmedoids.medoid_indices_]))
-        self.remove_by_indices(remove_indices)
+
+        if self.compression_method == 'k_medoids':
+            kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(  # Take distances from current cluster
+                self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes])
+            self._labels = kmedoids.labels_
+            self._coreset_indexes = kmedoids.medoid_indices_
+
+        elif self.compression_method == 'k_means_coreset':
+            self._coreset_indexes, self._labels = knas_coreset(
+                self.points, **self.compression_kwargs)
+            k = self._coreset_indexes.shape[0]
+        else:
+            raise NotImplementedError('Invalid compression type')
         # self.parallel_remove(remove_indices)
         # self.mutation_tree = MutationTree(KNasbench201.nasbench.meta_archs)
 
-        print(f'\nSpace updated to centers. total time: {time.time() - start}\n')
+        self.cluster_sizes = np.bincount(self._labels)
+        # copy_thread.join()
+        remove_indices = list(set(KNasbench201.nasbench.evaluated_indexes) -
+                              set(np.array(KNasbench201.nasbench.evaluated_indexes)[
+                                      self._coreset_indexes]))
+        self.remove_by_indices(remove_indices)
+        print(f'\nSpace updated to centers.\n time: {time.time() - start}\nsize:{len(self.nasbench)}\n')
+        self.ratio = k / len(KNasbench201.nasbench)
+        return k
 
     def cluster_by_arch(self, arch):
         if isinstance(arch, dict):
             # _labels indexes are incorrext
-            return self._labels[KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch['string']])]
+            return self._labels[
+                KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch['string']])]
         return self._labels[KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch])]
 
     def choose_clusters(self, data, m):
@@ -632,7 +687,8 @@ class KNasbench201(Nasbench201):
             remove_indices = remove_indices - set(real_indexes)
         remove_indices = list(remove_indices)
         self.remove_by_indices(remove_indices)
-        print(f'\nSpace updated to clusters. total time: {time.time() - start}\n')
+        print(f'\nSpace updated to clusters.\n time: {time.time() - start}\nsize:{len(self.nasbench)}\n')
+        self._is_updated_points = False
 
     @classmethod
     def get_cell(cls, arch=None, init=False):
@@ -714,7 +770,6 @@ class KNasbench201(Nasbench201):
                     new_arch_list.append(arch)
 
         return new_arch_list
-
 
 
 class Nasbench301(Nasbench):

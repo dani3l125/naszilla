@@ -7,6 +7,7 @@ import pickle
 import numpy as np
 import copy
 import yaml
+import matplotlib.pyplot as plt
 
 from naszilla.params import *
 from naszilla.nas_benchmarks import Nasbench101, Nasbench201, Nasbench301, KNasbench201
@@ -42,7 +43,8 @@ def run_experiments(args, save_dir):
             search_space = Nasbench101(mf=mf)
         elif ss == 'nasbench_201':
             search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
-                KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'])
+                KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
+                             compression_method=cfg['compression_method'], compression_args=cfg['k_means_coreset_args'])
         elif ss == 'nasbench_301':
             if args.k_alg:
                 print('K alg not supported yet!')
@@ -91,6 +93,19 @@ def run_experiments(args, save_dir):
         with open(filename, 'wb') as f:
             pickle.dump([algorithm_params, metann_params, results, walltimes, run_data, val_results], f)
             f.close()
+
+        result_mean = np.zeros_like(results[0].T[0])
+        for result in results:
+            result_mean = np.add(result_mean, result.T[1])
+        result_mean /= len(results)
+        # np.save('bananas.npy', result_mean)
+
+        sota_result = np.load('bananas.npy')
+        plt.plot(sota_result, color='green')
+        plt.plot(result_mean)
+        plt.savefig('{}.png'.format(cfg['figName']))
+
+
 
 def main(args):
 
