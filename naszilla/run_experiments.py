@@ -44,7 +44,8 @@ def run_experiments(args, save_dir):
         elif ss == 'nasbench_201':
             search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
                 KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
-                             compression_method=cfg['compression_method'], compression_args=cfg['k_means_coreset_args'])
+                             compression_method=cfg['compression_method'], compression_args=cfg['k_means_coreset_args'],
+                             points_alg='icba')
         elif ss == 'nasbench_301':
             if args.k_alg:
                 print('K alg not supported yet!')

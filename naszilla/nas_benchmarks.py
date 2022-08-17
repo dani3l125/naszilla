@@ -398,7 +398,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=False):
+                 is_debug=True):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
@@ -586,8 +586,18 @@ class KNasbench201(Nasbench201):
             points = [np.zeros(self.dim), point2]
             d_centers = np.zeros((1, 1))  # Insert first and second points
             for m in range(1, len(self.nasbench)):
+                # insert centers distance row and column
+                d_m = distance_matrix(np.resize(points[m], (1, points[m].size)),
+                                      np.stack(points))
+                d_new = np.zeros((m+1, m+1))
+                d_new[:-1, :-1] = d_centers
+                d_new[-1, :] = d_m
+                d_new[:, -1] = d_m
+                d_centers = d_new
+
+                #  Radiuses list
                 R = dist_matrix[:m+1, m]
-                d_m = distance_matrix(points[m], np.array(points))
+
                 intersections = []
 
 
