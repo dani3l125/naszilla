@@ -56,6 +56,24 @@ class MutationTree:
         return list(self.prefix_dict[path])
 
 
+def get_intersections(r1, r2, m1, m2):
+    return []
+
+
+def get_intersections_disjoint(r1, r2, m1, m2):
+    step = np.linalg.norm(m2 - m1)
+    i1 = m1 + r1 * step
+    i2 = m1 - r1 * step
+    i = i1 if ((i1 - m1) ** 2).mean() < ((i2 - m1) ** 2).mean() else i2
+    i1 = m2 + r1 * step
+    i2 = m2 - r1 * step
+    return [i, i1 if ((i1 - m2) ** 2).mean() < ((i2 - m2) ** 2).mean() else i2]
+
+
+def get_intersections_included(r1, r2, m1, m2):
+    return []
+
+
 class Nasbench:
 
     def is_knas(self):
@@ -464,7 +482,7 @@ class KNasbench201(Nasbench201):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 dim=10,
+                 dim=2,
                  n_threads=16,
                  dist_type='lev',
                  compression_method='k_medoids',
@@ -560,6 +578,7 @@ class KNasbench201(Nasbench201):
         '''
         if self._is_updated_points:
             return self._points
+        self.points_alg = 'icba'
 
         start = time.time()
 
@@ -581,24 +600,62 @@ class KNasbench201(Nasbench201):
             KNasbench201._points = X.T[ind].T
 
         elif self.points_alg == 'icba':
-            point2 = np.zeros(self.dim)
-            point2[0] = dist_matrix[0][1]
-            points = [np.zeros(self.dim), point2]
+            if self.dim > 2:
+                raise NotImplementedError('ICBA algorithm only implemented for d=2')
+            point2 = np.zeros((1, self.dim))
+            point2[0][0] = dist_matrix[0][1]
+            points = [np.zeros((1, self.dim)), point2]
             d_centers = np.zeros((1, 1))  # Insert first and second points
-            for m in range(1, len(self.nasbench)):
+            for m in range(2, len(self.nasbench)):
                 # insert centers distance row and column
-                d_m = distance_matrix(np.resize(points[m], (1, points[m].size)),
-                                      np.stack(points))
-                d_new = np.zeros((m+1, m+1))
-                d_new[:-1, :-1] = d_centers
-                d_new[-1, :] = d_m
-                d_new[:, -1] = d_m
-                d_centers = d_new
+                # d_m = distance_matrix(np.resize(points[m], (1, points[m].size)),
+                #                       np.stack(points))
+                # d_new = np.zeros((m + 1, m + 1))
+                # d_new[:-1, :-1] = d_centers
+                # d_new[-1, :] = d_m
+                # d_new[:, -1] = d_m
+                # d_centers = d_new
 
                 #  Radiuses list
-                R = dist_matrix[:m+1, m]
+                R = dist_matrix[m, :m]
+                centers = np.concatenate(points)
+                centers_tile = np.tile(np.expand_dims(centers, 0), len(points)).reshape(len(points), len(points), self.dim)
+                line_vecs = centers_tile - np.transpose(centers_tile,axes=(1, 0, 2))
+                R_tile = np.tile(np.expand_dims(R, 0).T, R.shape[0]).T
+                R_tile = np.concatenate((np.expand_dims(R_tile, -1), np.expand_dims(R_tile, -1)), axis=2)
+                steps = R_tile * line_vecs
+                vecs_sums = np.sum(line_vecs, axis=1) # TODO normalization, intersections reshape
+                intersections1 = centers_tile - steps
+                intersections2 = centers_tile + steps
 
-                intersections = []
+                # R_sum = np.tile(np.expand_dims(R, 0).T, R.shape[0]) + np.tile(np.expand_dims(R, 0).T, R.shape[0]).T
+                # intersect = np.logical_and(d_centers < R_sum, R_sum < 2 * d_centers)
+                # disjoint = d_centers >= R_sum
+                # includes = (2 * d_centers) < R_sum
+                #
+                # intersections = []
+                #
+                # for (i, center1) in enumerate(points):
+                #     for (j, center2) in enumerate(points):
+                #         if i != j:
+                #             if intersect[i][j]:
+                #                 intersections.extend(get_intersections(R[i], R[j], center1, center2))
+                #             elif disjoint[i][j] or includes[i][j]:
+                #                 intersections.extend(get_intersections_disjoint(R[i], R[j], center1, center2))
+                #             else:
+                #                 print(f'No matching intersection type for circles: {i}, {j}')
+                #
+                # intersections_losses = np.sum(np.abs(
+                #     distance_matrix(np.concatenate(intersections), np.concatenate(points)) - np.tile(
+                #         np.expand_dims(R, 0).T, R.shape[0]).T), axis=0)
+                #
+                # points.append(intersections[np.argmin(intersections_losses)])
+                # print(f'ICBA iteration={m}, distance={np.min(intersections_losses)}')
+
+            KNasbench201._points = np.concatenate(points)
+
+
+
 
 
 
