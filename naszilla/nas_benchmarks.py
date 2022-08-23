@@ -311,7 +311,7 @@ class Nasbench:
             top_5_loss = [archtuple[1][0] for archtuple in base_arch_list[:min(5, len(base_arch_list))]]
             print('top 5 val losses {}'.format(top_5_loss))
 
-        # perturb the best k architectures    
+        # perturb the best k architectures
         dic = {}
         for archtuple in base_arch_list:
             path_indices = self.get_cell(archtuple[0]).get_path_indices()
@@ -416,7 +416,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=True):
+                 is_debug=False):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
@@ -604,53 +604,49 @@ class KNasbench201(Nasbench201):
                 raise NotImplementedError('ICBA algorithm only implemented for d=2')
             point2 = np.zeros((1, self.dim))
             point2[0][0] = dist_matrix[0][1]
-            points = [np.zeros((1, self.dim)), point2]
+            points = [np.zeros((1, self.dim)), point2]  # TODO start with 3 points
             d_centers = np.zeros((1, 1))  # Insert first and second points
             for m in range(2, len(self.nasbench)):
-                # insert centers distance row and column
-                # d_m = distance_matrix(np.resize(points[m], (1, points[m].size)),
-                #                       np.stack(points))
-                # d_new = np.zeros((m + 1, m + 1))
-                # d_new[:-1, :-1] = d_centers
-                # d_new[-1, :] = d_m
-                # d_new[:, -1] = d_m
-                # d_centers = d_new
-
-                #  Radiuses list
+                # Radiuses vector
                 R = dist_matrix[m, :m]
+                # Points matrix
                 centers = np.concatenate(points)
                 centers_tile = np.tile(np.expand_dims(centers, 0), len(points)).reshape(len(points), len(points), self.dim)
+                # line representative vectors
                 line_vecs = centers_tile - np.transpose(centers_tile,axes=(1, 0, 2))
+                vecs_sums = np.sum(line_vecs, axis=2)
+                vecs_sums = np.concatenate((np.expand_dims(vecs_sums, -1), np.expand_dims(vecs_sums, -1)), axis=2)
+                line_vecs = line_vecs / vecs_sums
+                # Calculate points on circles for disjoint intersections projection
                 R_tile = np.tile(np.expand_dims(R, 0).T, R.shape[0]).T
                 R_tile = np.concatenate((np.expand_dims(R_tile, -1), np.expand_dims(R_tile, -1)), axis=2)
                 steps = R_tile * line_vecs
-                vecs_sums = np.sum(line_vecs, axis=1) # TODO normalization, intersections reshape
-                intersections1 = centers_tile - steps
-                intersections2 = centers_tile + steps
+                intersections1 = np.reshape(centers_tile - steps, (-1, self.dim))
+                intersections2 = np.reshape(centers_tile + steps, (-1, self.dim))
+                disjoint_intersections = np.concatenate((intersections1, intersections2))
 
-                # R_sum = np.tile(np.expand_dims(R, 0).T, R.shape[0]) + np.tile(np.expand_dims(R, 0).T, R.shape[0]).T
-                # intersect = np.logical_and(d_centers < R_sum, R_sum < 2 * d_centers)
-                # disjoint = d_centers >= R_sum
-                # includes = (2 * d_centers) < R_sum
-                #
-                # intersections = []
-                #
-                # for (i, center1) in enumerate(points):
-                #     for (j, center2) in enumerate(points):
-                #         if i != j:
-                #             if intersect[i][j]:
-                #                 intersections.extend(get_intersections(R[i], R[j], center1, center2))
-                #             elif disjoint[i][j] or includes[i][j]:
-                #                 intersections.extend(get_intersections_disjoint(R[i], R[j], center1, center2))
-                #             else:
-                #                 print(f'No matching intersection type for circles: {i}, {j}')
-                #
-                # intersections_losses = np.sum(np.abs(
-                #     distance_matrix(np.concatenate(intersections), np.concatenate(points)) - np.tile(
-                #         np.expand_dims(R, 0).T, R.shape[0]).T), axis=0)
-                #
-                # points.append(intersections[np.argmin(intersections_losses)])
-                # print(f'ICBA iteration={m}, distance={np.min(intersections_losses)}')
+                # Real intersections based on http://paulbourke.net/geometry/circlesphere/
+                R_tile = np.tile(np.expand_dims(R, 0).T, R.shape[0])
+                R_squared_distances =  R_tile ** 2 - R_tile.T **2
+                centers_squared_distances = np.sum(line_vecs ** 2, axis=2)
+                A = (R_squared_distances + centers_squared_distances) / (2 * np.sqrt(centers_squared_distances))
+                P2 = centers_tile + np.concatenate((np.expand_dims(A, -1), np.expand_dims(A, -1)), axis=2) * line_vecs
+                H = R_tile ** 2 - A ** 2
+                H = np.concatenate((np.expand_dims(H, -1), np.expand_dims(H, -1)), axis=2)
+                intersections1 = np.reshape(P2 + H * line_vecs, (-1, self.dim))
+                intersections2 = np.reshape(P2 - H * line_vecs, (-1, self.dim))
+
+                intersections = np.concatenate((intersections1, intersections2, disjoint_intersections))
+
+                intersections_losses = np.nan_to_num(np.sum(np.abs
+                                              (distance_matrix(intersections,
+                                                               centers),
+                                               np.tile(np.expand_dims(R, 0),
+                                                       intersections.shape[0]).reshape(-1, m)),
+                                              axis=1), nan=np.inf)
+
+                points.append(np.expand_dims(intersections[np.argmin(intersections_losses)], 0))
+                print(f'ICBA iteration={m}, distance={np.min(intersections_losses)}')
 
             KNasbench201._points = np.concatenate(points)
 
