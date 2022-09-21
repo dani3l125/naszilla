@@ -1,17 +1,19 @@
 import numpy as np
 import pickle
-import sys
 import os
-import threading
 import multiprocessing as mp
 import time
 import copy
-import random
 import ctypes
 
 from sklearn_extra.cluster import KMedoids
 from torch import load
-from scipy.spatial import distance_matrix
+from torch.cuda import is_available
+if is_available():
+    import cupy as cp
+else:
+    import numpy as cp
+
 
 from nasbench import api
 from nas_201_api import NASBench201API as API
@@ -24,6 +26,7 @@ from naszilla.nas_bench_201.distances import *
 from naszilla.coresets.k_means_coreset_via_robust_median import knas_coreset
 
 default_data_folder = '~/nas_benchmark_datasets/'
+CUDA = 1
 
 
 def to_numpy_array(shared_array, shape):
@@ -416,7 +419,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=False):
+                 is_debug=True):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
@@ -578,77 +581,80 @@ class KNasbench201(Nasbench201):
         '''
         if self._is_updated_points:
             return self._points
-        self.points_alg = 'icba'
 
         start = time.time()
 
-        dist_matrix = self.distances[np.array(self.nasbench.evaluated_indexes)].T[
-            np.array(self.nasbench.evaluated_indexes)]
+        dist_matrix = cp.array(self.distances[np.array(self.nasbench.evaluated_indexes)].T[
+            np.array(self.nasbench.evaluated_indexes)], dtype=cp.float16)
 
         if self.points_alg == 'evd':
-            m_row = np.tile(dist_matrix[0] ** 2, (dist_matrix.shape[0], 1))
-            m_col = np.tile(dist_matrix.T[0] ** 2, (dist_matrix.shape[0], 1)).T
+            m_row = cp.tile(dist_matrix[0] ** 2, (dist_matrix.shape[0], 1))
+            m_col = cp.tile(dist_matrix.T[0] ** 2, (dist_matrix.shape[0], 1)).T
             M = (dist_matrix ** 2 + m_row + m_col) / 2
 
-            w, v = np.linalg.eigh(M.astype(np.float64))
-            sign = np.tile(np.sign(w), (w.shape[0], 1))
-            w_sqrt = np.tile(np.sqrt(np.abs(w.real)), (w.shape[0], 1))
+            w, v = cp.linalg.eigh(M.astype(cp.float32))
+            w = w.astype(cp.float16)
+            v = v.astype(cp.float16)
+            sign = cp.tile(cp.sign(w), (w.shape[0], 1))
+            w_sqrt = cp.tile(cp.sqrt(cp.abs(w.real)), (w.shape[0], 1))
             X = v.real * w_sqrt * sign
 
             self.dim = min(self.dim, M.shape[0])
-            ind = np.argpartition(np.abs(w), -self.dim)[-self.dim:]
+            ind = cp.argpartition(cp.abs(w), -self.dim)[-self.dim:]
             KNasbench201._points = X.T[ind].T
 
         elif self.points_alg == 'icba':
             if self.dim > 2:
                 raise NotImplementedError('ICBA algorithm only implemented for d=2')
-            point2 = np.zeros((1, self.dim))
-            point2[0][0] = dist_matrix[0][1]
-            points = [np.zeros((1, self.dim)), point2]  # TODO start with 3 points
-            d_centers = np.zeros((1, 1))  # Insert first and second points
-            for m in range(2, len(self.nasbench)):
-                # Radiuses vector
-                R = dist_matrix[m, :m]
-                # Points matrix
-                centers = np.concatenate(points)
-                centers_tile = np.tile(np.expand_dims(centers, 0), len(points)).reshape(len(points), len(points), self.dim)
-                # line representative vectors
-                line_vecs = centers_tile - np.transpose(centers_tile,axes=(1, 0, 2))
-                vecs_sums = np.sum(line_vecs, axis=2)
-                vecs_sums = np.concatenate((np.expand_dims(vecs_sums, -1), np.expand_dims(vecs_sums, -1)), axis=2)
-                line_vecs = line_vecs / vecs_sums
-                # Calculate points on circles for disjoint intersections projection
-                R_tile = np.tile(np.expand_dims(R, 0).T, R.shape[0]).T
-                R_tile = np.concatenate((np.expand_dims(R_tile, -1), np.expand_dims(R_tile, -1)), axis=2)
-                steps = R_tile * line_vecs
-                intersections1 = np.reshape(centers_tile - steps, (-1, self.dim))
-                intersections2 = np.reshape(centers_tile + steps, (-1, self.dim))
-                disjoint_intersections = np.concatenate((intersections1, intersections2))
+            with cp.cuda.Device(CUDA):
+                point2 = cp.zeros((1, self.dim))
+                point2[0][0] = dist_matrix[0][1]
+                points = [cp.zeros((1, self.dim), dtype=cp.float16), point2]  # TODO start with 3 points
+                d_centers = cp.zeros((1, 1))  # Insert first and second points
+                for m in range(2, len(self.nasbench)):
+                    start_i = time.time()
+                    # Radiuses vector
+                    R = cp.array(dist_matrix[m, :m])
+                    # Points matrix
+                    centers = cp.concatenate(points, dtype=cp.float16)
+                    centers_tile = cp.tile(cp.expand_dims(centers, 0), len(points)).reshape(len(points), len(points), self.dim)
+                    # line representative vectors
+                    line_vecs = centers_tile - cp.transpose(centers_tile,axes=(1, 0, 2))
+                    vecs_sums = cp.sum(line_vecs, axis=2)
+                    vecs_sums = cp.concatenate((cp.expand_dims(vecs_sums, -1), cp.expand_dims(vecs_sums, -1)), axis=2, dtype=cp.float16)
+                    line_vecs = line_vecs / vecs_sums
+                    # Calculate points on circles for disjoint intersections projection
+                    R_tile = cp.tile(cp.expand_dims(R, 0).T, R.shape[0]).T
+                    R_tile = cp.concatenate((cp.expand_dims(R_tile, -1), cp.expand_dims(R_tile, -1)), axis=2, dtype=cp.float16)
+                    steps = R_tile * line_vecs
+                    intersections1 = cp.reshape(centers_tile - steps, (-1, self.dim))
+                    intersections2 = cp.reshape(centers_tile + steps, (-1, self.dim))
+                    disjoint_intersections = cp.concatenate((intersections1, intersections2), dtype=cp.float16)
 
-                # Real intersections based on http://paulbourke.net/geometry/circlesphere/
-                R_tile = np.tile(np.expand_dims(R, 0).T, R.shape[0])
-                R_squared_distances =  R_tile ** 2 - R_tile.T **2
-                centers_squared_distances = np.sum(line_vecs ** 2, axis=2)
-                A = (R_squared_distances + centers_squared_distances) / (2 * np.sqrt(centers_squared_distances))
-                P2 = centers_tile + np.concatenate((np.expand_dims(A, -1), np.expand_dims(A, -1)), axis=2) * line_vecs
-                H = R_tile ** 2 - A ** 2
-                H = np.concatenate((np.expand_dims(H, -1), np.expand_dims(H, -1)), axis=2)
-                intersections1 = np.reshape(P2 + H * line_vecs, (-1, self.dim))
-                intersections2 = np.reshape(P2 - H * line_vecs, (-1, self.dim))
+                    # Real intersections based on http://paulbourke.net/geometry/circlesphere/
+                    R_tile = cp.tile(cp.expand_dims(R, 0).T, R.shape[0])
+                    R_squared_distances =  R_tile ** 2 - R_tile.T **2
+                    centers_squared_distances = cp.sum(line_vecs ** 2, axis=2)
+                    A = (R_squared_distances + centers_squared_distances) / (2 * cp.sqrt(centers_squared_distances))
+                    P2 = centers_tile + cp.concatenate((cp.expand_dims(A, -1), cp.expand_dims(A, -1)), axis=2, dtype=cp.float16) * line_vecs
+                    H = R_tile ** 2 - A ** 2
+                    H = cp.concatenate((cp.expand_dims(H, -1), cp.expand_dims(H, -1)), axis=2, dtype=cp.float16)
+                    intersections1 = cp.reshape(P2 + H * line_vecs, (-1, self.dim))
+                    intersections2 = cp.reshape(P2 - H * line_vecs, (-1, self.dim))
 
-                intersections = np.concatenate((intersections1, intersections2, disjoint_intersections))
+                    intersections = cp.concatenate((intersections1, intersections2, disjoint_intersections), dtype=cp.float16)
+                    intersections = intersections[~cp.isnan(intersections), ~cp.isnan(intersections)]
+                    intersections_losses = cp.nan_to_num(cp.sum(cp.abs
+                                                  (cp.linalg.norm(
+                                                   intersections[:, None, :] - centers[None, :, :] ,axis = -1),
+                                                   cp.tile(cp.expand_dims(R, 0),
+                                                           intersections.shape[0]).reshape(-1, m)),
+                                                  axis=1), nan=cp.inf)
 
-                intersections_losses = np.nan_to_num(np.sum(np.abs
-                                              (distance_matrix(intersections,
-                                                               centers),
-                                               np.tile(np.expand_dims(R, 0),
-                                                       intersections.shape[0]).reshape(-1, m)),
-                                              axis=1), nan=np.inf)
+                    points.append(cp.expand_dims(intersections[cp.argmin(intersections_losses)], 0))
+                    print(f'ICBA iteration={m}, distance={cp.min(intersections_losses)}, time={time.time() -start_i}')
 
-                points.append(np.expand_dims(intersections[np.argmin(intersections_losses)], 0))
-                print(f'ICBA iteration={m}, distance={np.min(intersections_losses)}')
-
-            KNasbench201._points = np.concatenate(points)
+            KNasbench201._points = cp.concatenate(points).get()
 
 
 

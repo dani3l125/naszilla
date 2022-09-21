@@ -45,7 +45,7 @@ def run_experiments(args, save_dir):
             search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
                 KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
                              compression_method=cfg['compression_method'], compression_args=cfg['k_means_coreset_args'],
-                             points_alg='icba')
+                             points_alg='evd')
         elif ss == 'nasbench_301':
             if args.k_alg:
                 print('K alg not supported yet!')
@@ -99,12 +99,14 @@ def run_experiments(args, save_dir):
         for result in results:
             result_mean = np.add(result_mean, result.T[1])
         result_mean /= len(results)
-        # np.save('bananas.npy', result_mean)
+        if args.save_sota:
+            np.save(f'sota_results/{args.algo_params}_{args.dataset}.npy', result_mean)
 
-        sota_result = np.load('bananas.npy')
-        plt.plot(sota_result, color='green')
-        plt.plot(result_mean)
-        plt.savefig('{}.png'.format(cfg['figName']))
+        else:
+            sota_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
+            plt.plot(sota_result, color='green')
+            plt.plot(result_mean) # TODO debug to here, check x axis values and correct to 10, 20, 30...
+            plt.savefig('{}.png'.format(cfg['figName']))
 
 
 
@@ -144,8 +146,10 @@ if __name__ == "__main__":
     parser.add_argument('--output_filename', type=str, default='round', help='name of output files')
     parser.add_argument('--save_dir', type=str, default='results_output', help='name of save directory')
     parser.add_argument('--save_specs', type=bool, default=False, help='save the architecture specs')
+    parser.add_argument('--save_sota', type=bool, default=False, help='save the convergence result to a numpy array')
     parser.add_argument('--k_alg', type=int, default=0, help='use iterative k algorithm')
     parser.add_argument('--cfg', type=str, default='/home/daniel/naszilla/naszilla/knas_config.yaml', help='path to configuration file')
+
 
     args = parser.parse_args()
     main(args)

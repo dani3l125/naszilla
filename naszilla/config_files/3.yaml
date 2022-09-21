@@ -21,6 +21,7 @@ k_means_coreset_args:
     Replace_in_coreset_sample: 0
     use_threshold_method: 0
     random_generation: 0
+    r: 2
 
 fullKnas: False  # completely deterministic or not
 
