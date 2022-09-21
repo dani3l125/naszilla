@@ -104,8 +104,10 @@ def run_experiments(args, save_dir):
 
         else:
             sota_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
-            plt.plot(sota_result, color='green')
-            plt.plot(result_mean) # TODO debug to here, check x axis values and correct to 10, 20, 30...
+            x_axis = np.arange(10, len(sota_result) * 10 + 1, 10)
+            plt.plot(x=x_axis, y=sota_result, color='green', label=f'{args.algo_params}')
+            x_axis = np.arange(10, len(result_mean) * 10 + 1, 10)
+            plt.plot(x=x_axis, y=result_mean, label=f'IKNAS on {args.algo_params}')
             plt.savefig('{}.png'.format(cfg['figName']))
 
 

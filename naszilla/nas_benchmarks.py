@@ -584,23 +584,23 @@ class KNasbench201(Nasbench201):
 
         start = time.time()
 
-        dist_matrix = cp.array(self.distances[np.array(self.nasbench.evaluated_indexes)].T[
-            np.array(self.nasbench.evaluated_indexes)], dtype=cp.float16)
+        dist_matrix = np.array(self.distances[np.array(self.nasbench.evaluated_indexes)].T[
+            np.array(self.nasbench.evaluated_indexes)], dtype=np.float16)
 
         if self.points_alg == 'evd':
-            m_row = cp.tile(dist_matrix[0] ** 2, (dist_matrix.shape[0], 1))
-            m_col = cp.tile(dist_matrix.T[0] ** 2, (dist_matrix.shape[0], 1)).T
+            m_row = np.tile(dist_matrix[0] ** 2, (dist_matrix.shape[0], 1))
+            m_col = np.tile(dist_matrix.T[0] ** 2, (dist_matrix.shape[0], 1)).T
             M = (dist_matrix ** 2 + m_row + m_col) / 2
 
-            w, v = cp.linalg.eigh(M.astype(cp.float32))
-            w = w.astype(cp.float16)
-            v = v.astype(cp.float16)
-            sign = cp.tile(cp.sign(w), (w.shape[0], 1))
-            w_sqrt = cp.tile(cp.sqrt(cp.abs(w.real)), (w.shape[0], 1))
+            w, v = np.linalg.eigh(M.astype(np.float32))
+            w = w.astype(np.float16)
+            v = v.astype(np.float16)
+            sign = np.tile(np.sign(w), (w.shape[0], 1))
+            w_sqrt = np.tile(np.sqrt(np.abs(w.real)), (w.shape[0], 1))
             X = v.real * w_sqrt * sign
 
             self.dim = min(self.dim, M.shape[0])
-            ind = cp.argpartition(cp.abs(w), -self.dim)[-self.dim:]
+            ind = np.argpartition(np.abs(w), -self.dim)[-self.dim:]
             KNasbench201._points = X.T[ind].T
 
         elif self.points_alg == 'icba':
@@ -654,7 +654,7 @@ class KNasbench201(Nasbench201):
                     points.append(cp.expand_dims(intersections[cp.argmin(intersections_losses)], 0))
                     print(f'ICBA iteration={m}, distance={cp.min(intersections_losses)}, time={time.time() -start_i}')
 
-            KNasbench201._points = cp.concatenate(points).get()
+            KNasbench201._points = np.concatenate(points).get()
 
 
 
