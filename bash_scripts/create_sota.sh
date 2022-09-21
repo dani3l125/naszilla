@@ -1,7 +1,5 @@
 #!/bin/bash
 
-ENVPATH=${0:-/home/daniel/anaconda3/envs/knas/bin/python}
-
 printf "\n\n\n####################\n####################\n Creatig sota for random search, cifar 10\n####################\n####################\n\n\n"
 /home/daniel/anaconda3/envs/knas/bin/python /home/daniel/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \
 --algo_params random --queries 300 --trials 10 --k_alg 0 --save_sota 1\
