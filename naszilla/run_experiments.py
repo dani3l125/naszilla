@@ -34,6 +34,9 @@ def run_experiments(args, save_dir):
     # read configuration
     cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
 
+    total_results = []
+    total_val_results = []
+
     for i in range(trials):
 
         if ss == 'nasbench_101':
@@ -83,6 +86,10 @@ def run_experiments(args, save_dir):
             val_results.append(val_result)
             run_data.append(run_datum)
 
+        total_results.extend(results)
+        total_val_results.extend(val_results)
+
+
         # print and pickle results
         filename = os.path.join(save_dir, '{}_{}.pkl'.format(out_file, i))
         print('\n* Trial summary: (params, results, walltimes)')
@@ -95,20 +102,31 @@ def run_experiments(args, save_dir):
             pickle.dump([algorithm_params, metann_params, results, walltimes, run_data, val_results], f)
             f.close()
 
-        result_mean = np.zeros_like(results[0].T[0])
-        for result in results:
-            result_mean = np.add(result_mean, result.T[1])
-        result_mean /= len(results)
-        if args.save_sota:
-            np.save(f'sota_results/{args.algo_params}_{args.dataset}.npy', result_mean)
+    result_mean = np.zeros_like(total_results[0].T[0])
+    val_result_mean = np.zeros_like(total_results[0].T[0])
+    for i in range(len(total_results)):
+        result_mean = np.add(result_mean, total_results[i].T[1])
+        val_result_mean = np.add(val_result_mean, total_val_results[i].T[1])
+    result_mean /= len(total_results)
+    val_result_mean /= len(total_results)
+    if args.save_sota:
+        np.save(f'sota_results/{args.algo_params}_{args.dataset}.npy', result_mean)
+        np.save(f'sota_results/{args.algo_params}_{args.dataset}_val.npy', val_result_mean)
 
-        else:
-            sota_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
-            x_axis = np.arange(10, len(sota_result) * 10 + 1, 10)
-            plt.plot(x=x_axis, y=sota_result, color='green', label=f'{args.algo_params}')
-            x_axis = np.arange(10, len(result_mean) * 10 + 1, 10)
-            plt.plot(x=x_axis, y=result_mean, label=f'IKNAS on {args.algo_params}')
-            plt.savefig('{}.png'.format(cfg['figName']))
+    else:
+        sota_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
+        sota_val_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}_val.npy')
+        x_axis1 = np.arange(10, len(sota_result) * 10 + 1, 10)
+        x_axis2 = np.arange(10, len(result_mean) * 10 + 1, 10)
+        plt.plot(x=x_axis1, y=sota_result, color='green', label=f'{args.algo_params}')
+        plt.plot(x=x_axis2, y=result_mean, label=f'IKNAS on {args.algo_params}')
+        plt.savefig('{}.png'.format(cfg['figName']))
+        plt.figure()
+        plt.plot(x=x_axis1, y=sota_val_result, color='green', label=f'{args.algo_params}')
+        plt.plot(x=x_axis2, y=val_result_mean, label=f'IKNAS on {args.algo_params}')
+        plt.savefig('{}_val.png'.format(cfg['figName']))
+
+
 
 
 
