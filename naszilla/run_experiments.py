@@ -119,6 +119,9 @@ def main(args):
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
 
+    if not os.path.exists('sota_results'):
+        os.mkdir('sota_results')
+
     algo_params = args.algo_params
     save_path = save_dir + '/' + algo_params + '/'
     if not os.path.exists(save_path):
