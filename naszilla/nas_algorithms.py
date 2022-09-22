@@ -26,11 +26,12 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
     # run nas algorithm
     ps = copy.deepcopy(algo_params)
     algo_name = ps.pop('algo_name')
+    cluster_sizes_list = []
 
     if k_alg:
         if cfg is None:
             raise Exception('No configuration file')
-        data = knas(algo_params, search_space, mp, cfg)
+        data, cluster_sizes_list = knas(algo_params, search_space, mp, cfg)
     elif algo_name == 'random':
         data = random_search(search_space, **ps)
     elif algo_name == 'evolution':
@@ -65,7 +66,7 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
         ps['loss'] = DEFAULT_LOSS
 
     result, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], DEFAULT_LOSS)
-    return result, val_result, data
+    return result, val_result, data, cluster_sizes_list
 
 
 def schedule_linear(first, last, n):
@@ -180,7 +181,9 @@ def knas(algo_params, search_space, mp, cfg):
             return final_data
         space_size = len(search_space)
 
-    return final_data
+    cluster_sizes_list = search_space.get_sizes_list()
+
+    return final_data, cluster_sizes_list
 
 
 def compute_best_test_losses(data, k, total_queries, loss):

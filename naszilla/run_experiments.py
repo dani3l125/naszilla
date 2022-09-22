@@ -67,7 +67,8 @@ def run_experiments(args, save_dir):
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
             starttime = time.time()
             # this line runs the nas algorithm and returns the result
-            result, val_result, run_datum = run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg, cfg)
+            result, val_result, run_datum, cluster_sizes_list =\
+                run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg, cfg)
 
             result = np.round(result, 5)
             val_result = np.round(val_result, 5)

@@ -32,7 +32,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'exp3'
+figName: 'exp2'
 
 
 

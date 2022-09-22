@@ -419,7 +419,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=False):
+                 is_debug=True):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
@@ -485,13 +485,15 @@ class KNasbench201(Nasbench201):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 dim=2,
+                 dim=15,
                  n_threads=16,
                  dist_type='lev',
                  compression_method='k_medoids',
                  compression_args=None,
-                 points_alg='evd'):
+                 points_alg='evd'
+                 ):
         super().__init__(dataset, data_folder, version)
+        self.sizes_list = []
         self.dim = dim
         self.n_threads = n_threads
         self._is_updated_points = False
@@ -733,6 +735,7 @@ class KNasbench201(Nasbench201):
         self.remove_by_indices(remove_indices)
         print(f'\nSpace updated to centers.\n time: {time.time() - start}\nsize:{len(self.nasbench)}\n')
         self.ratio = k / len(KNasbench201.nasbench)
+        self.sizes_list.append(self._coreset_indexes.size)
         return k
 
     def cluster_by_arch(self, arch):
@@ -758,6 +761,9 @@ class KNasbench201(Nasbench201):
         self.remove_by_indices(remove_indices)
         print(f'\nSpace updated to clusters.\n time: {time.time() - start}\nsize:{len(self.nasbench)}\n')
         self._is_updated_points = False
+
+    def get_sizes_list(self):
+        return self.sizes_list
 
     @classmethod
     def get_cell(cls, arch=None, init=False):
