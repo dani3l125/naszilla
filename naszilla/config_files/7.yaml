@@ -10,7 +10,7 @@ qAutofill: True
 
 manual_schedulers: False
 
-m_c: 3
+m_c: 1.2
 
 k_means_coreset_args:
     coreset_iteration_sample_size: 30
@@ -21,6 +21,7 @@ k_means_coreset_args:
     Replace_in_coreset_sample: 0
     use_threshold_method: 0
     random_generation: 0
+    r: 1.25
 
 fullKnas: False  # completely deterministic or not
 
@@ -31,7 +32,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'exp7'
+figName: 'exp3'
 
 
 
