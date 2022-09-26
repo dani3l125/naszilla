@@ -81,12 +81,12 @@ def k_means_coreset_via_robust_median(P,
     while tau_for_the_original_set * P.shape[0] > coreset_iteration_sample_size:
         idxes = np.random.choice(P.shape[0], np.min([P.shape[0], median_sample_size]), replace=False)
         sample_for_median = P[idxes]
-        if dist_matrix:
+        if not dist_matrix is None:
             sample_for_median_dist_matrix = dist_matrix[idxes][:, idxes]
         if random_generation:
             robust_median_q_idxes = np.random.choice(P.shape[0], 1)
             robust_median_q = P[robust_median_q_idxes].flatten()
-            if dist_matrix: #TODO
+            if not dist_matrix is None: #TODO
                 opt_devided_by_size = np.sum(
                     ((euclidean_distances(robust_median_q.reshape(1, -1), sample_for_median)).flatten()) ** r) / (
                                               sample_for_median.shape[0] * delta_const)
@@ -101,12 +101,12 @@ def k_means_coreset_via_robust_median(P,
             # print(opt_devided_by_size)
         if not use_threshold_method:
             sorted_indexes_of_distances_from_q = euclidean_distances(robust_median_q.reshape(1, -1), P).argsort()[0] \
-            if not dist_matrix else dist_matrix[robust_median_q_idx].argsort() # TODO [0]
+            if dist_matrix is None else dist_matrix[robust_median_q_idx].argsort() # TODO [0]
             closest_points_to_q = sorted_indexes_of_distances_from_q[:int(tau_for_the_original_set * P.shape[0])]
             far_points_from_q = sorted_indexes_of_distances_from_q[int(tau_for_the_original_set * P.shape[0]):]
         else:
             distances_matrix = (euclidean_distances(robust_median_q.reshape(1, -1), P) ** r)[0] \
-            if not dist_matrix else (dist_matrix[robust_median_q_idx] ** r) # TODO [0]
+            if dist_matrix is None else (dist_matrix[robust_median_q_idx] ** r) # TODO [0]
             closest_points_to_q = np.argwhere(distances_matrix <= opt_devided_by_size).flatten()
             far_points_from_q = np.argwhere(distances_matrix > opt_devided_by_size).flatten()
         current_sample_size = coreset_iteration_sample_size
@@ -141,7 +141,7 @@ def k_means_coreset_via_robust_median(P,
 def compute_robust_median(Q, tau, use_threshold_method, r, dist_matrix=None):
     opt_devided_by_size = None
     # print(Q.shape)
-    distance_table = dist_matrix ** r if dist_matrix else euclidean_distances(Q, Q) ** r
+    distance_table = dist_matrix ** r if not dist_matrix is None else euclidean_distances(Q, Q) ** r
     distance_table.sort(axis=1)
     sum_of_ditance_for_each_row = np.sum(distance_table[:, :int(tau * Q.shape[0]) + 1], axis=1)
     idx = np.argmin(sum_of_ditance_for_each_row)
