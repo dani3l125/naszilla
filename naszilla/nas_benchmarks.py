@@ -571,8 +571,10 @@ class KNasbench201(Nasbench201):
             for t in threads:
                 t.join()
             KNasbench201._distances = to_numpy_array(shared_buf, (size, size))
-        np.save('lev_dist.npy', KNasbench201._distances)
 
+
+        KNasbench201._distances /= np.max(np.abs(KNasbench201._distances))
+        np.save('dist.npy', KNasbench201._distances)
         KNasbench201._is_updated_distances = True
         return KNasbench201._distances
 
@@ -593,7 +595,6 @@ class KNasbench201(Nasbench201):
             m_row = np.tile(dist_matrix[0] ** 2, (dist_matrix.shape[0], 1))
             m_col = np.tile(dist_matrix.T[0] ** 2, (dist_matrix.shape[0], 1)).T
             M = (dist_matrix ** 2 + m_row + m_col) / 2
-
             w, v = np.linalg.eigh(M.astype(np.float32))
             w = w.astype(np.float16)
             v = v.astype(np.float16)
