@@ -47,7 +47,7 @@ def k_means_cost(Q, centers, weights=None):
 
 
 def knas_coreset(P, dist_matrix, **kwargs):
-    _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix **kwargs)
+    _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix, **kwargs)
     # coreset_indexes = np.zeros(coreset.shape[0])
     # for i, point in enumerate(coreset):
     #     coreset_indexes[i] = np.where((P == point).all(axis=1))[0][0]
