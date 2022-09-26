@@ -503,7 +503,7 @@ class KNasbench201(Nasbench201):
         self.cluster_sizes = None
         self.points_alg = points_alg
         self.compression_method = compression_method
-        if self.compression_method == 'k_means_coreset':
+        if self.compression_method == 'k_means_coreset' or self.compression_method == 'k_means_coreset_orig_dist':
             self.compression_kwargs = compression_args
 
         self._labels = np.zeros(len(self.nasbench))
