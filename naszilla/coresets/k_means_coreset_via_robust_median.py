@@ -46,11 +46,11 @@ def k_means_cost(Q, centers, weights=None):
     return cost
 
 
-def knas_coreset(P, **kwargs):
-    _, _, coreset, _ = k_means_coreset_via_robust_median(P, **kwargs)
-    coreset_indexes = np.zeros(coreset.shape[0])
-    for i, point in enumerate(coreset):
-        coreset_indexes[i] = np.where((P == point).all(axis=1))[0][0]
+def knas_coreset(P, dist_matrix, **kwargs):
+    _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix **kwargs)
+    # coreset_indexes = np.zeros(coreset.shape[0])
+    # for i, point in enumerate(coreset):
+    #     coreset_indexes[i] = np.where((P == point).all(axis=1))[0][0]
 
     points2coreset_dist_mat = distance_matrix(P, coreset)
     labels = np.argmin(points2coreset_dist_mat, axis=1)
@@ -59,6 +59,7 @@ def knas_coreset(P, **kwargs):
 
 
 def k_means_coreset_via_robust_median(P,
+                                      dist_matrix=None,
                                       coreset_iteration_sample_size=None,
                                       k=None,
                                       median_sample_size=10,
@@ -69,9 +70,9 @@ def k_means_coreset_via_robust_median(P,
                                       random_generation=False,
                                       r=2):
     delta_const = 10
-    Pold = np.copy(P)
-    coreset_list = [];
-    weights_list = [];
+    coreset_list = []
+    coreset_index_list = []
+    weights_list = []
     eps = 0.1
     if tau_for_the_sampled_set is None: tau_for_the_sampled_set = 15 / (16 * k)
     if tau_for_the_original_set is None: tau_for_the_original_set = 1 / (2 * k)
@@ -80,22 +81,32 @@ def k_means_coreset_via_robust_median(P,
     while tau_for_the_original_set * P.shape[0] > coreset_iteration_sample_size:
         idxes = np.random.choice(P.shape[0], np.min([P.shape[0], median_sample_size]), replace=False)
         sample_for_median = P[idxes]
+        if dist_matrix:
+            sample_for_median_dist_matrix = dist_matrix[idxes][:, idxes]
         if random_generation:
-            robust_median_q = P[np.random.choice(P.shape[0], 1)].flatten()
-            opt_devided_by_size = np.sum(
-                ((euclidean_distances(robust_median_q.reshape(1, -1), sample_for_median)).flatten()) ** r) / (
+            robust_median_q_idxes = np.random.choice(P.shape[0], 1)
+            robust_median_q = P[robust_median_q_idxes].flatten()
+            if dist_matrix: #TODO
+                opt_devided_by_size = np.sum(
+                    ((euclidean_distances(robust_median_q.reshape(1, -1), sample_for_median)).flatten()) ** r) / (
                                               sample_for_median.shape[0] * delta_const)
+            else:
+                opt_devided_by_size = np.sum(
+                    ((euclidean_distances(robust_median_q.reshape(1, -1), sample_for_median)).flatten()) ** r) / (
+                                                  sample_for_median.shape[0] * delta_const)
             # print(opt_devided_by_size)
         else:
-            robust_median_q, opt_devided_by_size = compute_robust_median(sample_for_median, tau_for_the_sampled_set,
-                                                                         use_threshold_method, r)  # np.mean(P,axis=0)
+            robust_median_q, opt_devided_by_size, robust_median_q_idx = compute_robust_median(sample_for_median, tau_for_the_sampled_set,
+                                                                         use_threshold_method, r, sample_for_median_dist_matrix)  # np.mean(P,axis=0)
             # print(opt_devided_by_size)
         if not use_threshold_method:
-            sorted_indexes_of_distances_from_q = euclidean_distances(robust_median_q.reshape(1, -1), P).argsort()[0]
+            sorted_indexes_of_distances_from_q = euclidean_distances(robust_median_q.reshape(1, -1), P).argsort()[0] \
+            if not dist_matrix else dist_matrix[robust_median_q_idx].argsort() # TODO [0]
             closest_points_to_q = sorted_indexes_of_distances_from_q[:int(tau_for_the_original_set * P.shape[0])]
             far_points_from_q = sorted_indexes_of_distances_from_q[int(tau_for_the_original_set * P.shape[0]):]
         else:
-            distances_matrix = (euclidean_distances(robust_median_q.reshape(1, -1), P) ** r)[0]
+            distances_matrix = (euclidean_distances(robust_median_q.reshape(1, -1), P) ** r)[0] \
+            if not dist_matrix else (dist_matrix[robust_median_q_idx] ** r) # TODO [0]
             closest_points_to_q = np.argwhere(distances_matrix <= opt_devided_by_size).flatten()
             far_points_from_q = np.argwhere(distances_matrix > opt_devided_by_size).flatten()
         current_sample_size = coreset_iteration_sample_size
@@ -106,6 +117,7 @@ def k_means_coreset_via_robust_median(P,
                                              replace=Replace_in_coreset_sample)
         sampled_close_points = P[closest_points_to_q[idxes_for_coreset]]
         coreset_list.append(sampled_close_points)
+        coreset_index_list.append(closest_points_to_q[idxes_for_coreset])
 
         weights_list.append(np.ones(sampled_close_points.shape[0]) * closest_points_to_q.shape[0])
         P = P[far_points_from_q]
@@ -120,21 +132,23 @@ def k_means_coreset_via_robust_median(P,
                                 replace=Replace_in_coreset_sample)
     weights_list.append(np.ones(coreset_iteration_sample_size) * P.shape[0])
     coreset_list.append(P[last_idx])
+    coreset_index_list.append(last_idx)
 
-    return coreset_list, weights_list, np.concatenate(coreset_list, axis=0), np.concatenate(weights_list, axis=0)
+    return coreset_list, weights_list, np.concatenate(coreset_list, axis=0), np.concatenate(weights_list, axis=0), \
+           np.concatenate(coreset_index_list, axis=0)
 
 
-def compute_robust_median(Q, tau, use_threshold_method, r):
+def compute_robust_median(Q, tau, use_threshold_method, r, dist_matrix=None):
     opt_devided_by_size = None
     # print(Q.shape)
-    distance_table = euclidean_distances(Q, Q) ** r
+    distance_table = dist_matrix ** r if dist_matrix else euclidean_distances(Q, Q) ** r
     distance_table.sort(axis=1)
     sum_of_ditance_for_each_row = np.sum(distance_table[:, :int(tau * Q.shape[0]) + 1], axis=1)
     idx = np.argmin(sum_of_ditance_for_each_row)
     q = Q[idx]
     if use_threshold_method:
         opt_devided_by_size = sum_of_ditance_for_each_row[idx] / (int(tau * Q.shape[0]) + 1)
-    return q, opt_devided_by_size
+    return q, opt_devided_by_size, idx
 
 
 def exp_runner(P, k=3, nqueries=1000, name_ext='',

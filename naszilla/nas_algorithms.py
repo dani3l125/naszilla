@@ -176,7 +176,7 @@ def knas(algo_params, search_space, mp, cfg):
             print(f'\n Validation results: {val_result}\n#####')
 
         if k != -1:  # efficiency
-            search_space.choose_clusters(data, m)
+            search_space.choose_clusters(data, int(m))
         else:
             return final_data
         space_size = len(search_space)

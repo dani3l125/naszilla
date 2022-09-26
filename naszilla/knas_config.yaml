@@ -1,10 +1,10 @@
 iterations: 20
 
-distance: 'nasbot'  # Choose: real, lev, adj, path, nasbot
+distance: 'lev'  # Choose: real, lev, adj, path, nasbot
 
 threads: 16
 
-compression_method: 'k_means_coreset' # k_means_coreset, k_medoids
+compression_method: 'k_means_coreset_orig_dist' # k_means_coreset, k_medoids
 
 qAutofill: True
 
@@ -21,7 +21,7 @@ k_means_coreset_args:
     Replace_in_coreset_sample: 0
     use_threshold_method: 0
     random_generation: 0
-    r: 1
+    r: 2
 
 fullKnas: False  # completely deterministic or not
 
@@ -32,7 +32,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'exp6'
+figName: 'exp3'
 
 
 
