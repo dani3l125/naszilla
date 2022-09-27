@@ -31,7 +31,7 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
     if k_alg:
         if cfg is None:
             raise Exception('No configuration file')
-        data, cluster_sizes_list = knas(algo_params, search_space, mp, cfg)
+        data = knas(algo_params, search_space, mp, cfg)
     elif algo_name == 'random':
         data = random_search(search_space, **ps)
     elif algo_name == 'evolution':
@@ -181,9 +181,7 @@ def knas(algo_params, search_space, mp, cfg):
             return final_data
         space_size = len(search_space)
 
-    cluster_sizes_list = search_space.get_sizes_list()
-
-    return final_data, cluster_sizes_list
+    return final_data
 
 
 def compute_best_test_losses(data, k, total_queries, loss):

@@ -713,6 +713,11 @@ class KNasbench201(Nasbench201):
         # copy_thread.start()
         KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
 
+        if self.compression_method == 'uniform':
+            self._coreset_indexes = np.random.choice(KNasbench201.nasbench.evaluated_indexes.size,k)
+            points2coreset_dist_mat = self.distances[:, self._coreset_indexes]
+            self._labels = np.argmin(points2coreset_dist_mat, axis=1)
+
         if self.compression_method == 'k_medoids':
             kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(  # Take distances from current cluster
                 self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes])
