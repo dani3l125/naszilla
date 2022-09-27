@@ -115,12 +115,15 @@ def k_means_coreset_via_robust_median(P,
         idxes_for_coreset = np.random.choice(closest_points_to_q.shape[0],
                                              current_sample_size,
                                              replace=Replace_in_coreset_sample)
+        print(f'{P.shape}\n\n{closest_points_to_q.max()}\n\n{idxes_for_coreset.max()}')
         sampled_close_points = P[closest_points_to_q[idxes_for_coreset]]
         coreset_list.append(sampled_close_points)
         coreset_index_list.append(closest_points_to_q[idxes_for_coreset])
 
         weights_list.append(np.ones(sampled_close_points.shape[0]) * closest_points_to_q.shape[0])
         P = P[far_points_from_q]
+        if not dist_matrix is None:
+            dist_matrix = dist_matrix[far_points_from_q][:, far_points_from_q]
         # print(P.shape)
         # plt.plot(np.concatenate(coreset_list, axis=0)[:,0], np.concatenate(coreset_list, axis=0)[:,1], 'o', color = 'red',
         #     label="coreset")
