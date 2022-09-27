@@ -419,7 +419,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=False):
+                 is_debug=True):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
@@ -726,7 +726,8 @@ class KNasbench201(Nasbench201):
 
         elif self.compression_method == 'k_means_coreset_orig_dist':
             self._coreset_indexes, self._labels = knas_coreset(
-                self.points, self.distances, **self.compression_kwargs)
+                self.points, self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes],
+                **self.compression_kwargs)
             k = self._coreset_indexes.shape[0]
         else:
             raise NotImplementedError('Invalid compression type')

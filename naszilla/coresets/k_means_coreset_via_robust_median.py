@@ -115,7 +115,7 @@ def k_means_coreset_via_robust_median(P,
         idxes_for_coreset = np.random.choice(closest_points_to_q.shape[0],
                                              current_sample_size,
                                              replace=Replace_in_coreset_sample)
-        print(f'{P.shape}\n\n{closest_points_to_q.max()}\n\n{idxes_for_coreset.max()}')
+        # print(f'{P.shape}\n\n{closest_points_to_q.max()}\n\n{idxes_for_coreset.max()}')
         sampled_close_points = P[closest_points_to_q[idxes_for_coreset]]
         coreset_list.append(sampled_close_points)
         coreset_index_list.append(closest_points_to_q[idxes_for_coreset])
