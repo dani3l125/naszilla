@@ -119,12 +119,12 @@ def run_experiments(args, save_dir):
         sota_val_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}_val.npy')
         x_axis1 = np.arange(10, len(sota_result) * 10 + 1, 10)
         x_axis2 = np.arange(10, len(result_mean) * 10 + 1, 10)
-        plt.plot(x=x_axis1, y=sota_result, color='green', label=f'{args.algo_params}')
-        plt.plot(x=x_axis2, y=result_mean, label=f'IKNAS on {args.algo_params}')
+        plt.plot(x_axis1, sota_result, color='green', label=f'{args.algo_params}')
+        plt.plot(x_axis2, result_mean, label=f'IKNAS on {args.algo_params}')
         plt.savefig('{}.png'.format(cfg['figName']))
         plt.figure()
-        plt.plot(x=x_axis1, y=sota_val_result, color='green', label=f'{args.algo_params}')
-        plt.plot(x=x_axis2, y=val_result_mean, label=f'IKNAS on {args.algo_params}')
+        plt.plot(x_axis1, sota_val_result, color='green', label=f'{args.algo_params}')
+        plt.plot(x_axis2, val_result_mean, label=f'IKNAS on {args.algo_params}')
         plt.savefig('{}_val.png'.format(cfg['figName']))
 
 
