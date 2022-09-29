@@ -716,8 +716,10 @@ class KNasbench201(Nasbench201):
         print(self.compression_method)
 
         if self.compression_method == 'uniform':
-            self._coreset_indexes = np.random.choice(np.array(KNasbench201.nasbench.evaluated_indexes),k)
-            points2coreset_dist_mat = self.distances[:, self._coreset_indexes]
+            self._coreset_indexes = np.random.choice(len(KNasbench201.nasbench.evaluated_indexes),k)
+            points2coreset_dist_mat = self.distances[KNasbench201.nasbench.evaluated_indexes][
+                                      :, KNasbench201.nasbench.evaluated_indexes][
+                                      :, self._coreset_indexes]
             self._labels = np.argmin(points2coreset_dist_mat, axis=1)
 
         elif self.compression_method == 'k_medoids':
