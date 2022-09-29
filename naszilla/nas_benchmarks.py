@@ -419,7 +419,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=False):
+                 is_debug=True):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
@@ -697,6 +697,7 @@ class KNasbench201(Nasbench201):
             t.start()
             threads.append(t)
             first_idx += chunk_size
+
             last_idx += chunk_size
         if last_idx >= len(remove_indices) - 1:
             t = mp.Process(target=self.remove_by_indices, args=([remove_indices[last_idx:]]))
@@ -712,13 +713,14 @@ class KNasbench201(Nasbench201):
         # copy_thread = Process(target=KNasbench201.copy_bench)
         # copy_thread.start()
         KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
+        print(self.compression_method)
 
         if self.compression_method == 'uniform':
             self._coreset_indexes = np.random.choice(len(KNasbench201.nasbench.evaluated_indexes),k)
             points2coreset_dist_mat = self.distances[:, self._coreset_indexes]
             self._labels = np.argmin(points2coreset_dist_mat, axis=1)
 
-        if self.compression_method == 'k_medoids':
+        elif self.compression_method == 'k_medoids':
             kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(  # Take distances from current cluster
                 self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes])
             self._labels = kmedoids.labels_
