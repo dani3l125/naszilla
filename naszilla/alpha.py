@@ -48,7 +48,8 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
             if cluster_best_vals[label] != 0:
                 dist += np.abs(cluster_best_vals[label] - cluster_representative_vals[label])
                 count += 1
-            print(f'Dataset = {dataset} | Cluster = {label} | Cluster representative value = {cluster_representative_vals[label]} | Cluster best value = {cluster_best_vals[label]} | Difference = {np.abs(cluster_best_vals[label] - cluster_representative_vals[label])}')
+            if label%100 == 0:
+                print(f'Dataset = {dataset} | Cluster = {label} | Cluster representative value = {cluster_representative_vals[label]} | Cluster best value = {cluster_best_vals[label]} | Difference = {np.abs(cluster_best_vals[label] - cluster_representative_vals[label])}')
         dist /= count
         print(f'Avarage Distance = {dist}')
 
