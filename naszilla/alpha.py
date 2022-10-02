@@ -31,6 +31,7 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
     points2coreset_dist_mat = dist_matrix[:, coreset_indexes]
     labels = np.argmin(points2coreset_dist_mat, axis=1)
     print(len(labels))
+    return 'dick pic'
     sizes = np.bincount(labels)
     mean = np.mean(sizes)
     std = np.std(sizes)
