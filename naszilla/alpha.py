@@ -8,6 +8,16 @@ k_list = [6, 7, 8, 9, 10, 11, 12 ,13]
 coreset_iteration_sample_size_list = [20, 30, 40, 50, 60]
 median_sample_size_list = [20]
 
+
+search_space =  API(os.path.expanduser('~/nas_benchmark_datasets/NAS-Bench-201-v1_0-e61699.pth'))
+# search_space = torch.load('/home/daniel/nas_benchmark_datasets/NAS-Bench-mini.pth')
+archs_val = np.zeros((3, len(search_space)))
+for i in range(len(search_space)):
+    archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['loss']
+    archs_val[1, i] = search_space.query_by_index(i).get_metrics('cifar100', 'x-valid')['loss']
+    archs_val[2, i] = search_space.query_by_index(i).get_metrics('ImageNet16-120', 'x-valid')['loss']
+
+
 d = 10
 dataset = 'cifar100'
 dist_matrix = np.load('/home/daniel/lev_dist.npy')
@@ -24,14 +34,6 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
     mean = np.mean(sizes)
     std = np.std(sizes)
 
-    search_space = API(os.path.expanduser('~/nas_benchmark_datasets/NAS-Bench-201-v1_0-e61699.pth'))
-    # search_space = torch.load('/home/daniel/nas_benchmark_datasets/NAS-Bench-mini.pth')
-    archs_val = np.zeros((3, len(search_space)))
-    for i in range(len(search_space)):
-        archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['loss']
-        archs_val[1, i] = search_space.query_by_index(i).get_metrics('cifar100', 'x-valid')['loss']
-        archs_val[2, i] = search_space.query_by_index(i).get_metrics('ImageNet16-120', 'x-valid')['loss']
-
     print(f'\n\nk = {k} | coreset iteration sample size = {coreset_iteration_sample_size} | median_sample_size = {median_sample_size} ## coreset size = {coreset_indexes.size} | cluster size:(mean, std) = ({mean}. {std})')
 
     for i, dataset in enumerate(['cifar10', 'cifar100', 'ImageNet16-120']):
@@ -39,19 +41,17 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
         cluster_representative_vals = np.zeros(coreset_indexes.size)
         for arch_idx, label in enumerate(labels):
             cluster_best_vals[label] = min(cluster_best_vals[label],  archs_val[i, arch_idx])
+        dist = 0
         for label in range(coreset_indexes.size):
             cluster_representative_vals[label] = archs_val[i, coreset_indexes[label]]
+            dist += np.abs(cluster_best_vals[label] - cluster_representative_vals[label])
             print(f'Dataset = {dataset} | Cluster = {label} | Cluster representative value = {cluster_representative_vals[label]} | Cluster best value = {cluster_best_vals[label]} | Difference = {np.abs(cluster_best_vals[label] - cluster_representative_vals[label])}')
+        dist /= coreset_indexes.size
+
+    print(f'Avarage Distance = {dist}')
 
 
 def search_space_stats(num_of_optimums=30, knn=150):
-    search_space =  API(os.path.expanduser('~/nas_benchmark_datasets/NAS-Bench-201-v1_0-e61699.pth'))
-    # search_space = torch.load('/home/daniel/nas_benchmark_datasets/NAS-Bench-mini.pth')
-    archs_val = np.zeros((3, len(search_space)))
-    for i in range(len(search_space)):
-        archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['loss']
-        archs_val[1, i] = search_space.query_by_index(i).get_metrics('cifar100', 'x-valid')['loss']
-        archs_val[2, i] = search_space.query_by_index(i).get_metrics('ImageNet16-120', 'x-valid')['loss']
 
     for i, dataset in enumerate(['cifar10', 'cifar100', 'ImageNet16-120']):
         optimum_indexes = np.argsort(archs_val[i])[:num_of_optimums]
