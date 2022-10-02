@@ -57,7 +57,7 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
         dist /= count
         print(f'Avarage Distance = {dist}')
         print(f'Avarage distance from point to representative = {np.mean(distances_to_representatives)}')
-        print(f'Maximum distance between best arch and representative = {np.max(dist_matrix[coreset_indexes, best_values_indexes])}')
+        print(f'Maximum distance between best arch and representative = {np.max(dist_matrix[coreset_indexes.astype(int), best_values_indexes.astype(int)])}')
 
 
 
