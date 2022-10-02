@@ -30,6 +30,7 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
 
     points2coreset_dist_mat = dist_matrix[:, coreset_indexes]
     labels = np.argmin(points2coreset_dist_mat, axis=1)
+    distances_to_representatives = np.min(points2coreset_dist_mat, axis=1)
     sizes = np.bincount(labels)
     mean = np.mean(sizes)
     std = np.std(sizes)
@@ -37,10 +38,13 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
     print(f'\n\nk = {k} | coreset iteration sample size = {coreset_iteration_sample_size} | median_sample_size = {median_sample_size} ## coreset size = {coreset_indexes.size} | cluster size:(mean, std) = ({mean}. {std})')
 
     for i, dataset in enumerate(['cifar10', 'cifar100', 'ImageNet16-120']):
+        best_values_indexes = np.zeros((coreset_indexes.size))
         cluster_best_vals = np.zeros(coreset_indexes.size) * 10000
         cluster_representative_vals = np.zeros(coreset_indexes.size)
         for arch_idx, label in enumerate(labels):
-            cluster_best_vals[label] = max(cluster_best_vals[label],  archs_val[i, arch_idx])
+            if archs_val[i, arch_idx] > cluster_best_vals[label]:
+                best_values_indexes[label] = arch_idx
+                cluster_best_vals[label] = max(cluster_best_vals[label],  archs_val[i, arch_idx])
         dist = 0
         count = 0
         for label in range(coreset_indexes.size):
@@ -52,6 +56,9 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
                 print(f'Dataset = {dataset} | Cluster = {label} | Cluster representative value = {cluster_representative_vals[label]} | Cluster best value = {cluster_best_vals[label]} | Difference = {np.abs(cluster_best_vals[label] - cluster_representative_vals[label])}')
         dist /= count
         print(f'Avarage Distance = {dist}')
+        print(f'Avarage distance from point to representative = {np.mean(distances_to_representatives)}')
+        print(f'Maximum distance between best arch and representative = {np.max(dist_matrix[coreset_indexes, best_values_indexes])}')
+
 
 
 def search_space_stats(num_of_optimums=30, knn=150):
