@@ -52,7 +52,10 @@ def knas_coreset(P, dist_matrix, **kwargs):
     # for i, point in enumerate(coreset):
     #     coreset_indexes[i] = np.where((P == point).all(axis=1))[0][0]
 
-    points2coreset_dist_mat = distance_matrix(P, coreset)
+    if dist_matrix is None:
+        points2coreset_dist_mat = distance_matrix(P, coreset)
+    else:
+        points2coreset_dist_mat = dist_matrix[:, coreset_indexes]
     labels = np.argmin(points2coreset_dist_mat, axis=1)
 
     return coreset_indexes.astype(int), labels.astype(int)
