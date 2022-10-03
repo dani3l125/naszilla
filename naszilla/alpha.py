@@ -41,7 +41,7 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_o
         optimum_indexes = np.flip(np.argsort(archs_val[i]))[:num_of_optimums]
         optimum_labels = labels[optimum_indexes]
         representatives_indexes = coreset_indexes[optimum_labels]
-        optimum_accuracy_dists = np.zeros(optimum_labels)
+        optimum_accuracy_dists = np.zeros_like(optimum_labels)
         for j in range(optimum_labels.size):
             optimum_accuracy_dists[j] = np.abs(archs_val[i, optimum_indexes[j]] - archs_val[i, representatives_indexes[j]])
         optimum_euclidean_dists = dist_matrix[optimum_indexes, representatives_indexes]
