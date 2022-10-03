@@ -66,7 +66,7 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_o
         dist /= count
         print(f'Avarage Distance = {dist}')
         print(f'Avarage distance from point to representative = {np.mean(distances_to_representatives)}')
-        print(f'Maximum distance between best arch and representative = {np.max(dist_matrix[coreset_indexes.astype(int), best_values_indexes.astype(int)])}')
+        #print(f'Maximum distance between best arch and representative = {np.max(dist_matrix[coreset_indexes.astype(int), best_values_indexes.astype(int)])}')
         print(f'Accuracy distances between best architectures and its representatives:{optimum_accuracy_dists}')
         print(f'Euclidean distances between best architectures and its representatives:{optimum_euclidean_dists}')
 
