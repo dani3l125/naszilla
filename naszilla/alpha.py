@@ -46,6 +46,7 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_o
             optimum_accuracy_dists[j] = np.abs(archs_val[i, optimum_indexes[j]] - archs_val[i, representatives_indexes[j]])
         optimum_euclidean_dists = dist_matrix[optimum_indexes, representatives_indexes]
 
+        optimum_indexes = np.flip(np.argsort(archs_val[i]))
         best_values_indexes = np.zeros((optimum_indexes.size))
         cluster_best_vals = np.zeros(coreset_indexes.size) * 10000
         cluster_representative_vals = np.zeros(coreset_indexes.size)
