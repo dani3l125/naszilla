@@ -659,16 +659,23 @@ class KNasbench201(Nasbench201):
 
             KNasbench201._points = np.concatenate(points).get()
 
-
-
-
-
-
         else:
             raise NotImplementedError('Invalid points computation algorithm')
 
         print(f'Points computed. time: {time.time() - start}')
         return KNasbench201._points
+
+    def get_best_arch_loss(self):
+        best_acc = 0
+        best_idx = -1
+        for arch_idx in self.nasbench.evaluated_indexes:
+            dataset = self.dataset if self.dataset != 'cifar10' else 'cifar10-valid'
+            x = self.nasbench.query_by_index(arch_idx).get_metrics(dataset, 'x-valid')['loss']
+            if x > best_loss:
+                best_loss = x
+                best_idx = arch_idx
+
+        return best_idx, best_loss
 
     def get_type(self):
         return 'knasbench_201'
