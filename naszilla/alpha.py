@@ -23,7 +23,7 @@ dataset = 'cifar100'
 dist_matrix = np.load('/home/daniel/lev_dist.npy')
 P = np.zeros_like(dist_matrix)[:, :d]
 
-def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
+def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_optimums=30):
     _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix, k=k,
                                                                           coreset_iteration_sample_size=coreset_iteration_sample_size,
                                                                           median_sample_size=median_sample_size)
@@ -38,7 +38,15 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
     print(f'\n\nk = {k} | coreset iteration sample size = {coreset_iteration_sample_size} | median_sample_size = {median_sample_size} ## coreset size = {coreset_indexes.size} | cluster size:(mean, std) = ({mean}. {std})')
 
     for i, dataset in enumerate(['cifar10', 'cifar100', 'ImageNet16-120']):
-        best_values_indexes = np.zeros((coreset_indexes.size))
+        optimum_indexes = np.flip(np.argsort(archs_val[i]))[:num_of_optimums]
+        optimum_labels = labels[optimum_indexes]
+        representatives_indexes = coreset_indexes[optimum_labels]
+        optimum_accuracy_dists = np.zeros(optimum_labels)
+        for j in range(optimum_labels.size):
+            optimum_accuracy_dists[j] = np.abs(archs_val[i, optimum_indexes[j]] - archs_val[i, representatives_indexes[j]])
+        optimum_euclidean_dists = dist_matrix[optimum_indexes, representatives_indexes]
+
+        best_values_indexes = np.zeros((optimum_indexes.size))
         cluster_best_vals = np.zeros(coreset_indexes.size) * 10000
         cluster_representative_vals = np.zeros(coreset_indexes.size)
         for arch_idx, label in enumerate(labels):
@@ -52,13 +60,14 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size):
             if cluster_best_vals[label] != 0:
                 dist += np.abs(cluster_best_vals[label] - cluster_representative_vals[label])
                 count += 1
-            if label%100 == 0:
-                print(f'Dataset = {dataset} | Cluster = {label} | Cluster representative value = {cluster_representative_vals[label]} | Cluster best value = {cluster_best_vals[label]} | Difference = {np.abs(cluster_best_vals[label] - cluster_representative_vals[label])}')
+            # if label%100 == 0:
+            #     print(f'Dataset = {dataset} | Cluster = {label} | Cluster representative value = {cluster_representative_vals[label]} | Cluster best value = {cluster_best_vals[label]} | Difference = {np.abs(cluster_best_vals[label] - cluster_representative_vals[label])}')
         dist /= count
         print(f'Avarage Distance = {dist}')
         print(f'Avarage distance from point to representative = {np.mean(distances_to_representatives)}')
         print(f'Maximum distance between best arch and representative = {np.max(dist_matrix[coreset_indexes.astype(int), best_values_indexes.astype(int)])}')
-
+        print(f'Accuracy distances between best architectures and its representatives:{optimum_accuracy_dists}')
+        print(f'Euclidean distances between best architectures and its representatives:{optimum_euclidean_dists}')
 
 
 def search_space_stats(num_of_optimums=30, knn=150):
