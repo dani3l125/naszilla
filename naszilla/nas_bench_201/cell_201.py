@@ -347,48 +347,60 @@ class Cell201:
         return distance
 
 
-    def get_neighborhood(self, 
-                         nasbench, 
+    def get_neighborhood(self,
                          mutate_encoding,
-                         shuffle=True):
+                         shuffle=True,
+                         arch_list=None):
+        is_knas = not arch_list is None
         nbhd = []
         ops = self.get_op_list()
 
-        if mutate_encoding == 'adj':
-            for i in range(len(ops)):
-                available = [op for op in OPS if op != ops[i]]
-                for op in available:
-                    new_ops = ops.copy()
-                    new_ops[i] = op
-                    new_arch = {'string':self.get_string_from_ops(new_ops)}
-                    nbhd.append(new_arch)
+        if is_knas:
+        # In case of knas, neighbours defined as the set of architectures with
+        # the minimal adj distance from the current arch that exists in space.
+            distances = np.zeros(len(arch_list))
+            for i, arch in enumerate(arch_list):
+                distances[i] = adj_distance(self, Cell201(arch))
+            for idx in np.where(distances == np.min(distances))[0]:
+                nbhd.append({'string':arch_list[idx]})
 
-        elif mutate_encoding in ['path', 'trunc_path']:
 
-            if mutate_encoding == 'trunc_path':
-                path_blueprints = [[3], [0,4], [1,5]]
-            else:
-                path_blueprints = [[3], [0,4], [1,5], [0,2,5]]
-            ops = self.get_op_list()
-
-            for blueprint in path_blueprints:
-                for new_path in itertools.product(OPS, repeat=len(blueprint)):
-                    new_ops = ops.copy()
-
-                    for i, op in enumerate(new_path):
-                        new_ops[blueprint[i]] = op
-
-                        # check if it's the same
-                        same = True
-                        for j in range(len(ops)):
-                            if ops[j] != new_ops[j]:
-                                same = False
-                        if not same:
-                            new_arch = {'string':self.get_string_from_ops(new_ops)}
-                            nbhd.append(new_arch)
         else:
-            print('{} is an invalid mutate encoding'.format(mutate_encoding))
-            raise NotImplementedError()
+            if mutate_encoding == 'adj':
+                for i in range(len(ops)):
+                    available = [op for op in OPS if op != ops[i]]
+                    for op in available:
+                        new_ops = ops.copy()
+                        new_ops[i] = op
+                        new_arch = {'string':self.get_string_from_ops(new_ops)}
+                        nbhd.append(new_arch)
+
+            elif mutate_encoding in ['path', 'trunc_path']:
+
+                if mutate_encoding == 'trunc_path':
+                    path_blueprints = [[3], [0,4], [1,5]]
+                else:
+                    path_blueprints = [[3], [0,4], [1,5], [0,2,5]]
+                ops = self.get_op_list()
+
+                for blueprint in path_blueprints:
+                    for new_path in itertools.product(OPS, repeat=len(blueprint)):
+                        new_ops = ops.copy()
+
+                        for i, op in enumerate(new_path):
+                            new_ops[blueprint[i]] = op
+
+                            # check if it's the same
+                            same = True
+                            for j in range(len(ops)):
+                                if ops[j] != new_ops[j]:
+                                    same = False
+                            if not same:
+                                new_arch = {'string':self.get_string_from_ops(new_ops)}
+                                nbhd.append(new_arch)
+            else:
+                print('{} is an invalid mutate encoding'.format(mutate_encoding))
+                raise NotImplementedError()
 
         if shuffle:
             random.shuffle(nbhd)                

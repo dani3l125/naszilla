@@ -146,7 +146,8 @@ def knas(algo_params, search_space, mp, cfg):
         elif algo_name == 'random':
             data = random_search(search_space, **ps)
         elif algo_name == 'evolution':
-            data = evolution_search(search_space, **ps)
+            data = evolution_search(search_space, **ps,
+                                    mutation_tree=MutationTree(search_space.nasbench.meta_archs))
         elif algo_name == 'bananas':
             data = bananas(search_space, mp, **ps, predictor='bananas',
                            mutation_tree=MutationTree(search_space.nasbench.meta_archs),
@@ -160,7 +161,8 @@ def knas(algo_params, search_space, mp, cfg):
         elif algo_name == 'bohamiann':
             data = pybnn_search(search_space, model_type='bohamiann', **ps)
         elif algo_name == 'local_search':
-            data = local_search(search_space, **ps)
+            data = local_search(search_space, **ps,
+                                is_knas=True)
         elif algo_name == 'gcn_predictor':
             data = gcn_predictor(search_space, **ps)
         elif algo_name == 'vaenas':
@@ -240,7 +242,8 @@ def evolution_search(search_space,
                      random_encoding='adj',
                      deterministic=True,
                      regularize=True,
-                     verbose=1):
+                     verbose=1,
+                     mutation_tree=None):
     """
     regularized evolution
     """
@@ -261,7 +264,8 @@ def evolution_search(search_space,
         mutated = search_space.mutate_arch(data[best_index]['spec'],
                                            mutation_rate=mutation_rate,
                                            mutate_encoding=mutate_encoding,
-                                           cutoff=cutoff)
+                                           cutoff=cutoff,
+                                           mutation_tree=mutation_tree)
         arch_dict = search_space.query_arch(mutated, deterministic=deterministic)
 
         data.append(arch_dict)
@@ -435,7 +439,8 @@ def local_search(search_space,
                  stop_at_minimum=True,
                  total_queries=DEFAULT_TOTAL_QUERIES,
                  deterministic=True,
-                 verbose=1):
+                 verbose=1,
+                 is_knas=False):
     """
     local search
     """
@@ -467,7 +472,9 @@ def local_search(search_space,
         while True:
             # loop over iterations of local search until we hit a local minimum
             iter_dict[search_space.get_hash(arch_dict['spec'])] = 1
-            nbhd = search_space.get_nbhd(arch_dict['spec'], mutate_encoding=mutate_encoding)
+            nbhd = search_space.get_nbhd(arch_dict['spec'], mutate_encoding=mutate_encoding)\
+                   if not is_knas else search_space.get_nbhd(arch_dict['spec'], mutate_encoding=mutate_encoding,
+                                                             arch_list=search_space.nasbench.meta_archs)
             improvement = False
             nbhd_dicts = []
             for nbr in nbhd:

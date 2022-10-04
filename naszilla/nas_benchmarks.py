@@ -666,7 +666,7 @@ class KNasbench201(Nasbench201):
         return KNasbench201._points
 
     def get_best_arch_loss(self):
-        best_acc = 0
+        best_loss = 0
         best_idx = -1
         for arch_idx in self.nasbench.evaluated_indexes:
             dataset = self.dataset if self.dataset != 'cifar10' else 'cifar10-valid'
