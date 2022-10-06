@@ -27,7 +27,7 @@ for i in range(len(search_space)):
 
 d = 10
 dataset = 'cifar100'
-dist_matrix = np.load(f'/home/daniel/{args.dist}_dist.npy')
+dist_matrix = np.load(f'/home/daniel/distance_matrices/{args.dist}_dist.npy')
 P = np.zeros_like(dist_matrix)[:, :d]
 
 distace_functions = {
