@@ -450,12 +450,10 @@ class Nasbench201(Nasbench):
 
     def get_nbhd(self, arch, mutate_encoding='adj', arch_list=None):
         if isinstance(arch, str):
-            return Cell201(arch).get_neighborhood(self.nasbench,
-                                                  mutate_encoding=mutate_encoding,
+            return Cell201(arch).get_neighborhood(mutate_encoding=mutate_encoding,
                                                   arch_list=arch_list)
         else:
-            return Cell201(**arch).get_neighborhood(self.nasbench,
-                                                    mutate_encoding=mutate_encoding,
+            return Cell201(**arch).get_neighborhood(mutate_encoding=mutate_encoding,
                                                   arch_list=arch_list)
 
     def get_hash(self, arch):
