@@ -448,13 +448,15 @@ class Nasbench201(Nasbench):
         else:
             return Cell201(**arch)
 
-    def get_nbhd(self, arch, mutate_encoding='adj'):
+    def get_nbhd(self, arch, mutate_encoding='adj', arch_list=None):
         if isinstance(arch, str):
             return Cell201(arch).get_neighborhood(self.nasbench,
-                                                  mutate_encoding=mutate_encoding)
+                                                  mutate_encoding=mutate_encoding,
+                                                  arch_list=arch_list)
         else:
             return Cell201(**arch).get_neighborhood(self.nasbench,
-                                                    mutate_encoding=mutate_encoding)
+                                                    mutate_encoding=mutate_encoding,
+                                                  arch_list=arch_list)
 
     def get_hash(self, arch):
         # return a unique hash of the architecture+fidelity
