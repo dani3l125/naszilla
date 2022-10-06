@@ -2,6 +2,8 @@ import numpy as np
 from naszilla.coresets.k_means_coreset_via_robust_median import k_means_coreset_via_robust_median
 import os
 from nas_201_api import NASBench201API as API
+from naszilla.nas_bench_201.distances import *
+from naszilla.nas_bench_201.cell_201 import Cell201
 import torch
 
 k_list = [6, 7, 8, 9, 10, 11, 12 ,13]
@@ -22,6 +24,24 @@ d = 10
 dataset = 'cifar100'
 dist_matrix = np.load('/home/daniel/lev_dist.npy')
 P = np.zeros_like(dist_matrix)[:, :d]
+
+distace_functions = {
+    'adj': adj_distance,
+    'path': path_distance,
+    'lev': lev_distance,
+    'nasbot': nasbot_distance,
+    'real': real_distance
+}
+
+def calculate_distance_mat(dist_name):
+    if os.path.isfile(f'/home/daniel/distance_matrices/{dist_name}_dist.npy'):
+        return
+    dist_matrix = np.zeros((len(search_space), len(search_space)))
+    for i, str1 in enumerate(search_space.meta_archs):
+        for j, str2 in enumerate(search_space.meta_archs):
+            dist_matrix[i, j] = distace_functions[dist_name](Cell201(str1), Cell201(str2))
+
+    np.save(f'/home/daniel/distance_matrices/{dist_name}_dist.npy', dist_matrix)
 
 def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_optimums=30):
     _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix, k=k,
@@ -83,13 +103,13 @@ def search_space_stats(num_of_optimums=30, knn=150):
             print(f'{dataset} Dataset | {j} optimum | {knn_vals}')
 
 
-
-
-
-
-
 if __name__ == '__main__':
-    for k in k_list:
-        for coreset_iteration_sample_size in coreset_iteration_sample_size_list:
-            for median_sample_size in median_sample_size_list:
-                coreset_stats(k, coreset_iteration_sample_size, median_sample_size)
+    # for k in k_list:
+    #     for coreset_iteration_sample_size in coreset_iteration_sample_size_list:
+    #         for median_sample_size in median_sample_size_list:
+    #             coreset_stats(k, coreset_iteration_sample_size, median_sample_size)
+    for dist_name in distace_functions.keys():
+        print(f'Calculating {dist_name} distance...')
+        calculate_distance_mat(dist_name)
+        print('Done!')
+
