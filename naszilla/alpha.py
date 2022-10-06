@@ -4,7 +4,12 @@ import os
 from nas_201_api import NASBench201API as API
 from naszilla.nas_bench_201.distances import *
 from naszilla.nas_bench_201.cell_201 import Cell201
+import argparse
 import torch
+
+parser = argparse.ArgumentParser(description='Args for BANANAS experiments')
+parser.add_argument('--dist', type=str, default='lev', help='Number of trials')
+args = parser.parse_args()
 
 k_list = [6, 7, 8, 9, 10, 11, 12 ,13]
 coreset_iteration_sample_size_list = [20, 30, 40, 50, 60]
@@ -22,7 +27,7 @@ for i in range(len(search_space)):
 
 d = 10
 dataset = 'cifar100'
-dist_matrix = np.load('/home/daniel/lev_dist.npy')
+dist_matrix = np.load(f'/home/daniel/{args.dist}_dist.npy')
 P = np.zeros_like(dist_matrix)[:, :d]
 
 distace_functions = {
@@ -43,10 +48,12 @@ def calculate_distance_mat(dist_name):
 
     np.save(f'/home/daniel/distance_matrices/{dist_name}_dist.npy', dist_matrix)
 
+
 def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_optimums=30):
     _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix, k=k,
                                                                           coreset_iteration_sample_size=coreset_iteration_sample_size,
                                                                           median_sample_size=median_sample_size)
+
 
     points2coreset_dist_mat = dist_matrix[:, coreset_indexes]
     labels = np.argmin(points2coreset_dist_mat, axis=1)
@@ -55,40 +62,59 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_o
     mean = np.mean(sizes)
     std = np.std(sizes)
 
-    print(f'\n\nk = {k} | coreset iteration sample size = {coreset_iteration_sample_size} | median_sample_size = {median_sample_size} ## coreset size = {coreset_indexes.size} | cluster size:(mean, std) = ({mean}. {std})')
+    print(f'\nk = {k} | coreset iteration sample size = {coreset_iteration_sample_size} | median sample size = {median_sample_size}')
+    print('coreset size = {coreset_indexes.size}')
+    print('cluster size:(mean, std) = ({mean}. {std})')
 
     for i, dataset in enumerate(['cifar10', 'cifar100', 'ImageNet16-120']):
+        print(f'\n\tDataset:{dataset}')
         optimum_indexes = np.flip(np.argsort(archs_val[i]))[:num_of_optimums]
+        print(f'\t{num_of_optimums} best architectures validation accuracy values: {archs_val[i][optimum_indexes]}')
         optimum_labels = labels[optimum_indexes]
         representatives_indexes = coreset_indexes[optimum_labels]
         optimum_accuracy_dists = np.zeros_like(optimum_labels)
-        for j in range(optimum_labels.size):
-            optimum_accuracy_dists[j] = np.abs(archs_val[i, optimum_indexes[j]] - archs_val[i, representatives_indexes[j]])
+        # for j in range(optimum_labels.size):
+        #     optimum_accuracy_dists[j] = np.abs(archs_val[i, optimum_indexes[j]] - archs_val[i, representatives_indexes[j]])
+        optimum_accuracy_dists = np.abs(archs_val[i, optimum_indexes] - archs_val[i, representatives_indexes])
         optimum_euclidean_dists = dist_matrix[optimum_indexes, representatives_indexes]
+        print(f'\t{num_of_optimums} best architectures validation accuracy distance from representative: {optimum_accuracy_dists}')
+        print(
+            f'\t{num_of_optimums} best architectures {args.dist} (pseudo euclidean) distance from representative: {optimum_euclidean_dists}')
+        cluster_accuracy_distance = np.zeros(optimum_labels.size)
+        cluster_euclidean_distance = np.zeros(optimum_labels.size)
+        for idx, label in enumerate(optimum_labels):
+            label_indexes = np.where(labels == label)
+            cluster_accuracy_distance[idx] = np.mean(np.abs(archs_val[i, label_indexes] - representatives_indexes[idx]))
+            cluster_euclidean_distance[idx] = np.mean(dist_matrix[representatives_indexes[idx], label_indexes])
+        print(f'\t{num_of_optimums} best architecture\'s clusters:')
+        print(f'\tcluster sizes: {sizes[optimum_labels]}')
+        print(f'\tAverage accuracy distance from representative (in cluster): {cluster_accuracy_distance}')
+        print(f'\tAverage {args.dist} (euclidean) distance from representative (in cluster): {cluster_euclidean_distance}')
 
-        optimum_indexes = np.flip(np.argsort(archs_val[i]))
-        best_values_indexes = np.zeros((optimum_indexes.size))
-        cluster_best_vals = np.zeros(coreset_indexes.size) * 10000
-        cluster_representative_vals = np.zeros(coreset_indexes.size)
-        for arch_idx, label in enumerate(labels):
-            if archs_val[i, arch_idx] > cluster_best_vals[label]:
-                best_values_indexes[label] = arch_idx
-                cluster_best_vals[label] = max(cluster_best_vals[label],  archs_val[i, arch_idx])
-        dist = 0
-        count = 0
-        for label in range(coreset_indexes.size):
-            cluster_representative_vals[label] = archs_val[i, coreset_indexes[label]]
-            if cluster_best_vals[label] != 0:
-                dist += np.abs(cluster_best_vals[label] - cluster_representative_vals[label])
-                count += 1
-            # if label%100 == 0:
-            #     print(f'Dataset = {dataset} | Cluster = {label} | Cluster representative value = {cluster_representative_vals[label]} | Cluster best value = {cluster_best_vals[label]} | Difference = {np.abs(cluster_best_vals[label] - cluster_representative_vals[label])}')
-        dist /= count
-        print(f'Avarage Distance = {dist}')
-        print(f'Avarage distance from point to representative = {np.mean(distances_to_representatives)}')
-        #print(f'Maximum distance between best arch and representative = {np.max(dist_matrix[coreset_indexes.astype(int), best_values_indexes.astype(int)])}')
-        print(f'Accuracy distances between best architectures and its representatives:{optimum_accuracy_dists}')
-        print(f'Euclidean distances between best architectures and its representatives:{optimum_euclidean_dists}')
+        #
+        # optimum_indexes = np.flip(np.argsort(archs_val[i]))
+        # best_values_indexes = np.zeros((optimum_indexes.size))
+        # cluster_best_vals = np.zeros(coreset_indexes.size) * 10000
+        # cluster_representative_vals = np.zeros(coreset_indexes.size)
+        # for arch_idx, label in enumerate(labels):
+        #     if archs_val[i, arch_idx] > cluster_best_vals[label]:
+        #         best_values_indexes[label] = arch_idx
+        #         cluster_best_vals[label] = max(cluster_best_vals[label],  archs_val[i, arch_idx])
+        # dist = 0
+        # count = 0
+        # for label in range(coreset_indexes.size):
+        #     cluster_representative_vals[label] = archs_val[i, coreset_indexes[label]]
+        #     if cluster_best_vals[label] != 0:
+        #         dist += np.abs(cluster_best_vals[label] - cluster_representative_vals[label])
+        #         count += 1
+        #     # if label%100 == 0:
+        #     #     print(f'Dataset = {dataset} | Cluster = {label} | Cluster representative value = {cluster_representative_vals[label]} | Cluster best value = {cluster_best_vals[label]} | Difference = {np.abs(cluster_best_vals[label] - cluster_representative_vals[label])}')
+        # dist /= count
+        # print(f'Avarage Distance = {dist}')
+        # print(f'Avarage distance from point to representative = {np.mean(distances_to_representatives)}')
+        # #print(f'Maximum distance between best arch and representative = {np.max(dist_matrix[coreset_indexes.astype(int), best_values_indexes.astype(int)])}')
+        # print(f'Accuracy distances between best architectures and its representatives:{optimum_accuracy_dists}')
+        # print(f'Euclidean distances between best architectures and its representatives:{optimum_euclidean_dists}')
 
 
 def search_space_stats(num_of_optimums=30, knn=150):
@@ -104,12 +130,13 @@ def search_space_stats(num_of_optimums=30, knn=150):
 
 
 if __name__ == '__main__':
-    # for k in k_list:
-    #     for coreset_iteration_sample_size in coreset_iteration_sample_size_list:
-    #         for median_sample_size in median_sample_size_list:
-    #             coreset_stats(k, coreset_iteration_sample_size, median_sample_size)
     for dist_name in distace_functions.keys():
         print(f'Calculating {dist_name} distance...')
         calculate_distance_mat(dist_name)
         print('Done!')
+
+    for k in k_list:
+        for coreset_iteration_sample_size in coreset_iteration_sample_size_list:
+            for median_sample_size in median_sample_size_list:
+                coreset_stats(k, coreset_iteration_sample_size, median_sample_size)
 
