@@ -44,7 +44,10 @@ def calculate_distance_mat(dist_name):
     dist_matrix = np.zeros((len(search_space), len(search_space)))
     for i, str1 in enumerate(search_space.meta_archs):
         for j, str2 in enumerate(search_space.meta_archs):
-            dist_matrix[i, j] = distace_functions[dist_name](Cell201(str1), Cell201(str2))
+            if dist_name == 'real':
+                dist_matrix[i, j] = real_distance(Cell201(str1), Cell201(str2), search_space)
+            else:
+                dist_matrix[i, j] = distace_functions[dist_name](Cell201(str1), Cell201(str2))
 
     np.save(f'/home/daniel/distance_matrices/{dist_name}_dist.npy', dist_matrix)
 
