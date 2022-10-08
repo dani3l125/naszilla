@@ -35,7 +35,7 @@ distace_functions = {
     'path': path_distance,
     'lev': lev_distance,
     'nasbot': nasbot_distance,
-    'real': real_distance
+#    'real': real_distance
 }
 
 def calculate_distance_mat(dist_name):
