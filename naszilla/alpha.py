@@ -87,7 +87,7 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_o
         cluster_euclidean_distance = np.zeros(optimum_labels.size)
         for idx, label in enumerate(optimum_labels):
             label_indexes = np.where(labels == label)
-            cluster_accuracy_distance[idx] = np.mean(np.abs(archs_val[i, label_indexes] - representatives_indexes[idx]))
+            cluster_accuracy_distance[idx] = np.mean(np.abs(archs_val[i, label_indexes] - archs_val[i, representatives_indexes[idx]]))
             cluster_euclidean_distance[idx] = np.mean(dist_matrix[representatives_indexes[idx], label_indexes])
         print(f'\t{num_of_optimums} best architecture\'s clusters:')
         print(f'\tcluster sizes: {sizes[optimum_labels]}')
