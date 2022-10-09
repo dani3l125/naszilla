@@ -66,8 +66,8 @@ def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_o
     std = np.std(sizes)
 
     print(f'\nk = {k} | coreset iteration sample size = {coreset_iteration_sample_size} | median sample size = {median_sample_size}')
-    print('coreset size = {coreset_indexes.size}')
-    print('cluster size:(mean, std) = ({mean}. {std})')
+    print(f'coreset size = {coreset_indexes.size}')
+    print(f'cluster size:(mean, std) = ({mean}. {std})')
 
     for i, dataset in enumerate(['cifar10', 'cifar100', 'ImageNet16-120']):
         print(f'\n\tDataset:{dataset}')
