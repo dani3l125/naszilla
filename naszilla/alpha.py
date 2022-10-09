@@ -12,7 +12,7 @@ parser.add_argument('--dist', type=str, default='lev', help='Number of trials')
 args = parser.parse_args()
 
 k_list = [4, 6, 8, 10, 12 ,14]
-coreset_iteration_sample_size_list = [20, 40, 60]
+coreset_iteration_sample_size_list = [1]
 median_sample_size_list = [20]
 
 
