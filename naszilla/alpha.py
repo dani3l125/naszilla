@@ -11,8 +11,8 @@ parser = argparse.ArgumentParser(description='Args for BANANAS experiments')
 parser.add_argument('--dist', type=str, default='lev', help='Number of trials')
 args = parser.parse_args()
 
-k_list = [6, 7, 8, 9, 10, 11, 12 ,13]
-coreset_iteration_sample_size_list = [20, 30, 40, 50, 60]
+k_list = [4, 6, 8, 10, 12 ,14]
+coreset_iteration_sample_size_list = [20, 40, 60]
 median_sample_size_list = [20]
 
 
