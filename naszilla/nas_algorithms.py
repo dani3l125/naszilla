@@ -1,6 +1,7 @@
 import itertools
 import os
 import pickle
+import signal
 import sys
 import copy
 import gc
@@ -20,6 +21,9 @@ DEFAULT_NUM_INIT = 10
 DEFAULT_K = 10
 DEFAULT_TOTAL_QUERIES = 150
 DEFAULT_LOSS = 'val_loss'
+
+def signal_handler(signum, frame):
+    raise Exception("Timed out!")
 
 
 def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
@@ -454,9 +458,15 @@ def local_search(search_space,
 
         arch_dicts = []
         while len(arch_dicts) < num_init:
-            arch_dict = search_space.query_arch(random_encoding=random_encoding,
-                                                deterministic=deterministic,
-                                                epochs=epochs)
+
+            signal.signal(signal.SIGALRM, signal_handler)
+            signal.alarm(300)  # Ten seconds
+            try:
+                arch_dict = search_space.query_arch(random_encoding=random_encoding,
+                                                    deterministic=deterministic,
+                                                    epochs=epochs)
+            except Exception as msg:
+                print("Timed out!")
 
             if search_space.get_hash(arch_dict['spec']) not in query_dict:
                 query_dict[search_space.get_hash(arch_dict['spec'])] = 1
