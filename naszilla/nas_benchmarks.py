@@ -790,7 +790,7 @@ class KNasbench201(Nasbench201):
 
     @classmethod
     def get_cell(cls, arch=None, init=False):
-        if not arch:
+        if arch is None:
             return Cell201
 
         # if not cls.nasbench is None and not init:

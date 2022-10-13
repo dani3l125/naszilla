@@ -724,3 +724,11 @@ def pybnn_search(search_space,
         query += k
 
     return data
+
+
+# TODO list:
+# 1. experiments beautiful graphs: triangles on line for mine, same color dotted for competitor.
+#    all algorithms on same plot, different colors and definitions of lines, axes, and white color in the back.
+# 2. best arch after 50 & 300 epochs for different first core-set size. m ratio, other parameters?
+# 3. read num iterations etc. experiment statistics, think of graphs
+# 4. Debug iteration1 k =-1
