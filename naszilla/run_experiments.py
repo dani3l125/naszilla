@@ -7,6 +7,7 @@ import pickle
 import numpy as np
 import copy
 import yaml
+from cycler import cycler
 import matplotlib.pyplot as plt
 
 from naszilla.params import *
@@ -36,37 +37,37 @@ def run_experiments(args, save_dir):
 
     for compression_method in ['uniform', 'k_medoids', 'k_means_coreset', 'k_means_coreset_orig_dist']:
 
-        total_results = []
-        total_val_results = []
-
-        for i in range(trials):
-
-            if ss == 'nasbench_101':
-                if args.k_alg:
-                    print('K alg not supported yet!')
-                    raise NotImplementedError()
-                search_space = Nasbench101(mf=mf)
-            elif ss == 'nasbench_201':
-                search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
-                    KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
-                                 compression_method=compression_method, compression_args=cfg['k_means_coreset_args'],
-                                 points_alg='evd')
-            elif ss == 'nasbench_301':
-                if args.k_alg:
-                    print('K alg not supported yet!')
-                    raise NotImplementedError()
-                search_space = Nasbench301()
-            else:
-                print('Invalid search space')
-                raise NotImplementedError()
+        algorithm_results = {}
+        algorithm_val_results = {}
+        for j in range(num_algos):
+            print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
             results = []
             val_results = []
             walltimes = []
             run_data = []
 
-            for j in range(num_algos):
-                print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
+            for i in range(trials):
+
+                if ss == 'nasbench_101':
+                    if args.k_alg:
+                        print('K alg not supported yet!')
+                        raise NotImplementedError()
+                    search_space = Nasbench101(mf=mf)
+                elif ss == 'nasbench_201':
+                    search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
+                        KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
+                                     compression_method=compression_method, compression_args=cfg['k_means_coreset_args'],
+                                     points_alg='evd')
+                elif ss == 'nasbench_301':
+                    if args.k_alg:
+                        print('K alg not supported yet!')
+                        raise NotImplementedError()
+                    search_space = Nasbench301()
+                else:
+                    print('Invalid search space')
+                    raise NotImplementedError()
+
                 starttime = time.time()
                 # this line runs the nas algorithm and returns the result
                 result, val_result, run_datum, cluster_sizes_list =\
@@ -89,9 +90,15 @@ def run_experiments(args, save_dir):
                 val_results.append(val_result)
                 run_data.append(run_datum)
 
-            total_results.extend(results)
-            total_val_results.extend(val_results)
 
+            for i in range(len(results)):
+                results[i] = results[i].T[1]
+                val_results[i] = val_results[i].T[1]
+            results = np.stack(results, dim=0)
+            val_results = np.stack(val_results, dim=0)
+
+            algorithm_results[algorithm_params[j]] = (np.mean(results, axis=0), np.std(results, axis=0))
+            algorithm_val_results[algorithm_params[j]] = (np.mean(val_results, axis=0), np.std(val_results, axis=0))
 
             # print and pickle results
             filename = os.path.join(save_dir, '{}_{}.pkl'.format(out_file, i))
@@ -105,29 +112,38 @@ def run_experiments(args, save_dir):
                 pickle.dump([algorithm_params, metann_params, results, walltimes, run_data, val_results], f)
                 f.close()
 
-        result_mean = np.zeros_like(total_results[0].T[0])
-        val_result_mean = np.zeros_like(total_results[0].T[0])
-        for i in range(len(total_results)):
-            result_mean = np.add(result_mean, total_results[i].T[1])
-            val_result_mean = np.add(val_result_mean, total_val_results[i].T[1])
-        result_mean /= len(total_results)
-        val_result_mean /= len(total_results)
-        if args.save_sota:
-            np.save(f'sota_results/{args.algo_params}_{args.dataset}.npy', result_mean)
-            np.save(f'sota_results/{args.algo_params}_{args.dataset}_val.npy', val_result_mean)
+        # if args.save_sota:
+        #     np.save(f'sota_results/{args.algo_params}_{args.dataset}.npy', result_mean)
+        #     np.save(f'sota_results/{args.algo_params}_{args.dataset}_val.npy', val_result_mean)
 
-        else:
-            sota_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
-            sota_val_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}_val.npy')
-            x_axis1 = np.arange(10, len(sota_result) * 10 + 1, 10)
-            x_axis2 = np.arange(10, len(result_mean) * 10 + 1, 10)
-            plt.plot(x_axis1, sota_result, color='green', label=f'{args.algo_params}')
-            plt.plot(x_axis2, result_mean, label=f'IKNAS on {args.algo_params}')
-            plt.savefig('plots/{}_{}_{}_{}.png'.format(cfg['figName'], args.algo_params, args.dataset, compression_method))
-            plt.figure()
-            plt.plot(x_axis1, sota_val_result, color='green', label=f'{args.algo_params}')
-            plt.plot(x_axis2, val_result_mean, label=f'IKNAS on {args.algo_params}')
-            plt.savefig('plots/{}_{}_{}_{}_val.png'.format(cfg['figName'], args.algo_params, args.dataset, compression_method))
+        # else:
+        #     sota_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
+        #     sota_val_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}_val.npy')
+        #     x_axis1 = np.arange(10, len(sota_result) * 10 + 1, 10)
+        #     x_axis2 = np.arange(10, len(result_mean) * 10 + 1, 10)
+        #     plt.plot(x_axis1, sota_result, color='green', label=f'{args.algo_params}')
+        #     plt.plot(x_axis2, result_mean, label=f'IKNAS on {args.algo_params}')
+        #     plt.savefig('plots/{}_{}_{}_{}.png'.format(cfg['figName'], args.algo_params, args.dataset, compression_method))
+        #     plt.figure()
+        #     plt.plot(x_axis1, sota_val_result, color='green', label=f'{args.algo_params}')
+        #     plt.plot(x_axis2, val_result_mean, label=f'IKNAS on {args.algo_params}')
+        #     plt.savefig('plots/{}_{}_{}_{}_val.png'.format(cfg['figName'], args.algo_params, args.dataset, compression_method))
+        #
+        #     np.save('paper_plots/{}_{}_{}_{}.npy'.format(cfg['figName'], args.algo_params, args.dataset, compression_method))
+
+        plt.figure()
+        plt.xlabel()
+        custom_cycler = cycler(color=['r', 'r', 'g', 'g', 'b', 'b', 'y', 'y'])
+        plt.rc('lines', linewidth=2)
+        plt.rc('axes', prop_cycle=custom_cycler)
+        for algo_name in algorithm_results.keys():
+            sota_result = 100 - np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
+            sota_val_result = 100 - np.load(f'sota_results/{args.algo_params}_{args.dataset}_val.npy')
+            result = 100 - algorithm_results[algo_name][0]
+            val_result = 100 - algorithm_val_results[algo_name][0]
+            plt.plot()
+            plt.figure(sota_result)
+
 
 
 
