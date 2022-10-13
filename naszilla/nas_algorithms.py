@@ -111,7 +111,7 @@ def knas(algo_params, search_space, mp, cfg):
 
     for i in range(n_iterations):
         # Case of checking complete space:
-        if (space_size <= total_q - q_sum and cfg['qAutofill']) or (cfg['compression_method'] == 'k_means_coreset' and space_size < 30):
+        if (space_size <= total_q - q_sum and cfg['qAutofill']) or (cfg['compression_method'].startswith('k_means_coreset') and space_size < 30):
             k = -1
             q = space_size
             m = -1
