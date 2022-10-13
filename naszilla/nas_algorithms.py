@@ -115,35 +115,29 @@ def knas(algo_params, search_space, mp, cfg):
 
     for i in range(n_iterations):
         # Case of checking complete space:
-        if (space_size <= total_q - q_sum and cfg['qAutofill']) or (cfg['compression_method'].startswith('k_means_coreset') and space_size < 30):
+        k = 1
+        if space_size <= total_q - q_sum and cfg['qAutofill']:
             k = -1
             q = space_size
             m = -1
         else:
-            if cfg['kScheduler']['type'] == 'log':
-                k = int(np.ceil(np.log2(space_size)))
-                q = k
-                m = int(max(1, np.round(k/cfg['m_c'])))
+            if cfg['kScheduler']['type'] == 'linear':
+                k = cfg['kScheduler']['first']
             elif cfg['kScheduler']['type'] == 'geometric':
                 k = len(search_space) // cfg['kScheduler']['constant']
-                q = min(30, k)  # TODO: schedule q properly (for efficiency)
-                m = q // cfg['m_c']
-            elif cfg['kScheduler']['type'] == 'manual':
+            else:  # cfg['kScheduler']['type'] == 'manual'
                 k = min(cfg['kScheduler']['manual'][i], len(search_space))
-                q = min(30, k)  # TODO: schedule q properly (for efficiency)
-                m = q // cfg['m_c']
 
         if k != -1:
             # -1 means searching in the final cluster as usual
-            k = search_space.prune(k)
-            if cfg['compression_method'] == 'k_means_coreset':
-                q = min(30, k)  # TODO: schedule q properly (for efficiency)
-                m = q // cfg['m_c']
+            k = search_space.prune(i, k)
+            q = int(k * total_q / 15624) if k > 50 else min(50, total_q - q_sum)
+            m = q // cfg['m_c']
 
 
         ps['total_queries'] = q
         q_sum += q
-        print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}')
+        print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
 
         if algo_name == 'pknas':
             data = search_space.generate_complete_dataset()

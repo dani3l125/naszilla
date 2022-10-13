@@ -94,8 +94,8 @@ def run_experiments(args, save_dir):
             for i in range(len(results)):
                 results[i] = results[i].T[1]
                 val_results[i] = val_results[i].T[1]
-            results = np.stack(results, dim=0)
-            val_results = np.stack(val_results, dim=0)
+            results = np.stack(results, axis=0)
+            val_results = np.stack(val_results, axis=0)
 
             algorithm_results[algorithm_params[j]] = (np.mean(results, axis=0), np.std(results, axis=0))
             algorithm_val_results[algorithm_params[j]] = (np.mean(val_results, axis=0), np.std(val_results, axis=0))

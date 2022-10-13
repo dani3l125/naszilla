@@ -505,6 +505,10 @@ class KNasbench201(Nasbench201):
         self.compression_method = compression_method
         if self.compression_method == 'k_means_coreset' or self.compression_method == 'k_means_coreset_orig_dist':
             self.compression_kwargs = compression_args
+            if isinstance(self.compression_kwargs['k'], list):
+                self.k_for_coreset = self.compression_kwargs['k']
+            else:
+                self.k_for_coreset = np.ones[50] * self.compression_kwargs['k']
 
         self._labels = np.zeros(len(self.nasbench))
 
@@ -714,7 +718,7 @@ class KNasbench201(Nasbench201):
         for t in threads:
             t.join()
 
-    def prune(self, k=20):
+    def prune(self, iteration, k=20):
         start = time.time()
         # TODO: debug deepcopy paralelizing
         # copy_thread = Process(target=KNasbench201.copy_bench)
@@ -736,11 +740,13 @@ class KNasbench201(Nasbench201):
             self._coreset_indexes = kmedoids.medoid_indices_
 
         elif self.compression_method == 'k_means_coreset':
+            self.compression_kwargs['k'] = self.k_for_coreset[iteration]
             self._coreset_indexes, self._labels = knas_coreset(
                 self.points, None, **self.compression_kwargs)
             k = self._coreset_indexes.shape[0]
 
         elif self.compression_method == 'k_means_coreset_orig_dist':
+            self.compression_kwargs['k'] = self.k_for_coreset[iteration]
             self._coreset_indexes, self._labels = knas_coreset(
                 self.points, self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes],
                 **self.compression_kwargs)
