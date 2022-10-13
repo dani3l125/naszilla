@@ -131,19 +131,24 @@ def run_experiments(args, save_dir):
         #
         #     np.save('paper_plots/{}_{}_{}_{}.npy'.format(cfg['figName'], args.algo_params, args.dataset, compression_method))
 
-        plt.figure()
-        plt.xlabel()
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4.5), tight_layout=True)
         custom_cycler = cycler(color=['r', 'r', 'g', 'g', 'b', 'b', 'y', 'y'])
-        plt.rc('lines', linewidth=2)
-        plt.rc('axes', prop_cycle=custom_cycler)
+        ax1.set_xlabel('Queries')
+        ax1.set_ylabel('Best accuracy')
+        ax2.set_xlabel('Queries')
+        ax2.set_ylabel('Best accuracy')
+        ax1.set_prop_cycle(custom_cycler)
+        ax2.set_prop_cycle(custom_cycler)
         for algo_name in algorithm_results.keys():
             sota_result = 100 - np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
             sota_val_result = 100 - np.load(f'sota_results/{args.algo_params}_{args.dataset}_val.npy')
             result = 100 - algorithm_results[algo_name][0]
             val_result = 100 - algorithm_val_results[algo_name][0]
-            plt.plot()
-            plt.figure(sota_result)
-
+            ax1.plot(np.arange(10 , 301 ,10), sota_result, '--')
+            ax1.plot(np.arange(10, 301, 10), result, '^-')
+            ax1.plot(np.arange(10, 301, 10), sota_val_result, '--')
+            ax1.plot(np.arange(10, 301, 10), val_result, '^-')
+        plt.savefig('plots/{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method))
 
 
 
