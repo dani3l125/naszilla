@@ -8,6 +8,7 @@ import gc
 import numpy as np
 import tensorflow as tf
 from argparse import Namespace
+from scipy.special import softmax
 
 from naszilla.acquisition_functions import acq_fn
 from naszilla.meta_neural_net import MetaNeuralnet
@@ -104,6 +105,7 @@ def knas(algo_params, search_space, mp, cfg):
     n_iterations = cfg['iterations']
     total_q = algo_params['total_queries']
     q_sum = 0
+    q_list = (total_q * softmax((1 / n_iterations) * np.arange(n_iterations, 0 , -1))).astype(int)
     space_size = len(search_space)
 
     ps = copy.deepcopy(algo_params)
@@ -120,6 +122,12 @@ def knas(algo_params, search_space, mp, cfg):
             k = -1
             q = space_size
             m = -1
+        elif cfg['compression_method'].startswith('k_means_coreset') and space_size <= 200:
+            k = -1
+            q = total_q - q_sum
+            m = -1
+
+
         else:
             if cfg['kScheduler']['type'] == 'linear':
                 k = cfg['kScheduler']['first']
@@ -131,7 +139,11 @@ def knas(algo_params, search_space, mp, cfg):
         if k != -1:
             # -1 means searching in the final cluster as usual
             k = search_space.prune(i, k)
-            q = int(k * total_q / 15624) if k > 50 else min(50, total_q - q_sum)
+            # q = k * total_q / 15624 if k > 50 else min(50, total_q - q_sum)
+            # q = total_q // n_iterations
+            # q /= 10
+            # q = int(np.ceil(q)*10)
+            q = q_list[i]
             m = q // cfg['m_c']
 
 
