@@ -97,8 +97,8 @@ def run_experiments(args, save_dir):
             results = np.stack(results, axis=0)
             val_results = np.stack(val_results, axis=0)
 
-            algorithm_results[algorithm_params[j]] = (np.mean(results, axis=0), np.std(results, axis=0))
-            algorithm_val_results[algorithm_params[j]] = (np.mean(val_results, axis=0), np.std(val_results, axis=0))
+            algorithm_results[algorithm_params[j]['algo_name']] = (np.mean(results, axis=0), np.std(results, axis=0))
+            algorithm_val_results[algorithm_params[j]['algo_name']] = (np.mean(val_results, axis=0), np.std(val_results, axis=0))
 
             # print and pickle results
             filename = os.path.join(save_dir, '{}_{}.pkl'.format(out_file, i))
