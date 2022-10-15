@@ -491,7 +491,12 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd'
-                 ):
+                 ):           
+        _is_updated_distances = False
+        _distances = None
+        _coreset_indexes = None
+        old_nasbench = None
+        _points = None
         super().__init__(dataset, data_folder, version)
         self.sizes_list = []
         self.dim = dim
