@@ -89,6 +89,8 @@ def run_experiments(args, save_dir):
                 results.append(result)
                 val_results.append(val_result)
                 run_data.append(run_datum)
+                
+                del search_space
 
 
             for i in range(len(results)):
