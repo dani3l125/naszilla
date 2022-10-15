@@ -493,10 +493,18 @@ class KNasbench201(Nasbench201):
                  points_alg='evd'
                  ):           
         KNasbench201._is_updated_distances = False
+        if not KNasbench201._distances is None:
+             del KNasbench201._distances
         KNasbench201._distances = None
         KNasbench201._coreset_indexes = None
+        if not KNasbench201._coreset_indexes is None:
+             del KNasbench201._coreset_indexes
         KNasbench201.old_nasbench = None
+        if not KNasbench201.old_nasbench is None:
+             del KNasbench201.old_nasbench
         KNasbench201._points = None
+        if not KNasbench201._points is None:
+             del KNasbench201._points
         super().__init__(dataset, data_folder, version)
         self.sizes_list = []
         self.dim = dim

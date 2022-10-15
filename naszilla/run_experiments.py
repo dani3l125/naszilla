@@ -55,6 +55,7 @@ def run_experiments(args, save_dir):
                         raise NotImplementedError()
                     search_space = Nasbench101(mf=mf)
                 elif ss == 'nasbench_201':
+                    from naszilla.nas_benchmarks import KNasbench201
                     search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
                         KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
                                      compression_method=compression_method, compression_args=cfg['k_means_coreset_args'],
@@ -89,6 +90,8 @@ def run_experiments(args, save_dir):
                 results.append(result)
                 val_results.append(val_result)
                 run_data.append(run_datum)
+                
+                del KNasbench201
 
 
             for i in range(len(results)):
