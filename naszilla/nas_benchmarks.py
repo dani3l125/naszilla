@@ -492,11 +492,11 @@ class KNasbench201(Nasbench201):
                  compression_args=None,
                  points_alg='evd'
                  ):           
-        _is_updated_distances = False
-        _distances = None
-        _coreset_indexes = None
-        old_nasbench = None
-        _points = None
+        KNasbench201._is_updated_distances = False
+        KNasbench201._distances = None
+        KNasbench201._coreset_indexes = None
+        KNasbench201.old_nasbench = None
+        KNasbench201._points = None
         super().__init__(dataset, data_folder, version)
         self.sizes_list = []
         self.dim = dim
