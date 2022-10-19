@@ -4,9 +4,9 @@ distance: 'lev'  # Choose: real, lev, adj, path, nasbot
 
 threads: 16
 
-compression_method: 'k_means_coreset' # k_means_coreset, k_medoids
+compression_method: 'uniform' # k_means_coreset, k_medoids
 
-qAutofill: True
+qAutofill: False
 
 manual_schedulers: False
 

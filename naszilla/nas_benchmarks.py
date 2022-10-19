@@ -419,12 +419,16 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=False):
+                 is_debug=True):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
 
         print(f'\t\t\t\nis debug  =  {is_debug}')
+
+        if not Nasbench201.nasbench is None:
+            del Nasbench201.nasbench
+        Nasbench201.nasbench = None
 
         if is_debug:
             Nasbench201.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
