@@ -426,7 +426,7 @@ class Nasbench201(Nasbench):
         
         if not isinstance(self, KNasbench201):
             print(f'\t\t\t\nis debug  =  {is_debug}')
-        
+
             if not Nasbench201.nasbench is None:
                 del Nasbench201.nasbench
             Nasbench201.nasbench = None
@@ -495,7 +495,8 @@ class KNasbench201(Nasbench201):
                  dist_type='lev',
                  compression_method='k_medoids',
                  compression_args=None,
-                 points_alg='evd'
+                 points_alg='evd',
+                 is_debug=False
                  ):
         KNasbench201._is_updated_distances = False
         if not KNasbench201._distances is None:
@@ -510,7 +511,7 @@ class KNasbench201(Nasbench201):
         KNasbench201._points = None
         if not KNasbench201._points is None:
              del KNasbench201._points
-        super().__init__(dataset, data_folder, version)
+        super().__init__(dataset, data_folder, version, is_debug=is_debug)
 
         print(f'\t\t\t\nis debug  =  {is_debug}')
 
