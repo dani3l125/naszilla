@@ -496,7 +496,7 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd',
-                 is_debug=True
+                 is_debug=False
                  ):
         KNasbench201._is_updated_distances = False
         if not KNasbench201._distances is None:
