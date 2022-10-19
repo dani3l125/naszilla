@@ -423,19 +423,20 @@ class Nasbench201(Nasbench):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
-
-        print(f'\t\t\t\nis debug  =  {is_debug}')
-
-        if not Nasbench201.nasbench is None:
-            del Nasbench201.nasbench
-        Nasbench201.nasbench = None
-
-        if is_debug:
-            Nasbench201.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
-        elif version == '1_0':
-            Nasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
-        elif version == '1_1':
-            Nasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
+        
+        if not isinstance(self, KNasbench201):
+            print(f'\t\t\t\nis debug  =  {is_debug}')
+        
+            if not Nasbench201.nasbench is None:
+                del Nasbench201.nasbench
+            Nasbench201.nasbench = None
+        
+            if is_debug:
+                Nasbench201.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+            elif version == '1_0':
+                Nasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+            elif version == '1_1':
+                Nasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
 
     def __len__(self):
         return len(self.nasbench)
@@ -495,7 +496,7 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd'
-                 ):           
+                 ):
         KNasbench201._is_updated_distances = False
         if not KNasbench201._distances is None:
              del KNasbench201._distances
@@ -510,6 +511,19 @@ class KNasbench201(Nasbench201):
         if not KNasbench201._points is None:
              del KNasbench201._points
         super().__init__(dataset, data_folder, version)
+
+        print(f'\t\t\t\nis debug  =  {is_debug}')
+
+        if not KNasbench201.nasbench is None:
+            del KNasbench201.nasbench
+        KNasbench201.nasbench = None
+
+        if is_debug:
+            KNasbench201.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+        elif version == '1_0':
+            KNasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+        elif version == '1_1':
+            KNasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
         self.sizes_list = []
         self.dim = dim
         self.n_threads = n_threads
