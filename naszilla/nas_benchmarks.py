@@ -496,7 +496,7 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd',
-                 is_debug=False
+                 is_debug=True
                  ):
         KNasbench201._is_updated_distances = False
         if not KNasbench201._distances is None:
@@ -756,7 +756,7 @@ class KNasbench201(Nasbench201):
         # copy_thread = Process(target=KNasbench201.copy_bench)
         # copy_thread.start()
         KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
-        print(self.compression_method)
+        print(f'Compression: {self.compression_method}')
 
         if self.compression_method == 'uniform':
             self._coreset_indexes = np.random.choice(len(KNasbench201.nasbench.evaluated_indexes),k)

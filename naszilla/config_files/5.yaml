@@ -1,6 +1,6 @@
-iterations: 20
+iterations: 8
 
-distance: 'adj'  # Choose: real, lev, adj, path, nasbot
+distance: 'path'  # Choose: real, lev, adj, path, nasbot
 
 threads: 16
 
@@ -10,11 +10,11 @@ qAutofill: False
 
 manual_schedulers: False
 
-m_c: 3
+m_c: 1.5
 
 k_means_coreset_args:
     coreset_iteration_sample_size: 1
-    k: 15
+    k: 4
     median_sample_size: 40
     tau_for_the_sampled_set: null
     tau_for_the_original_set: null
@@ -26,14 +26,13 @@ k_means_coreset_args:
 fullKnas: False  # completely deterministic or not
 
 kScheduler:
-  type: "geometric"  # Choose: linear, geometric, manual
+  type: "linear"  # Choose: linear, geometric, manual
   constant: 15
-  first: 1000  # can be set to -c: such that maxVal is size/c
+  first: 400  # can be set to -c: such that maxVal is size/c
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-
-figName: 'exp5'
+figName: 'm1.5_k4_path'
 
 
 

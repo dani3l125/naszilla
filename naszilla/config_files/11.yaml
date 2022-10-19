@@ -1,25 +1,38 @@
-iterations: 10
+iterations: 8
 
-distance: 'nasbot'  # Choose: real, lev, adj, path, nasbot
+distance: 'lev'  # Choose: real, lev, adj, path, nasbot
 
 threads: 16
+
+compression_method: 'k_means_coreset_orig_dist' # k_means_coreset, k_medoids
+
+qAutofill: False
+
+manual_schedulers: False
+
+m_c: 1.5
+
+k_means_coreset_args:
+    coreset_iteration_sample_size: 1
+    k: 20
+    median_sample_size: 40
+    tau_for_the_sampled_set: null
+    tau_for_the_original_set: null
+    Replace_in_coreset_sample: 0
+    use_threshold_method: 0
+    random_generation: 0
+    r: 2
 
 fullKnas: False  # completely deterministic or not
 
 kScheduler:
   type: "geometric"  # Choose: linear, geometric, manual
-  first: 400  # can be set to -c: such that maxVal is size/c
-  last: 30  # can be set to -c: such that mivVal is size/c
-  manual: []
+  constant: 15
+  first: 1000  # can be set to -c: such that maxVal is size/c
+  last: 1  # can be set to -c: such that mivVal is size/c
+  manual: [500, 30, 2]
 
-mScheduler:
-  type: "linear"
-  first: 0  # can be set to -c
-  last: 0  # can be set to -c
-  manual: []
+figName: 'm15_k20_lev'
 
-qScheduler:
-  type: "linear"
-  first: 40  # can be set to -c, not used in case of geometric
-  ratio: 1.5
-  manual: []
+
+

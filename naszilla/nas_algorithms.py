@@ -124,7 +124,7 @@ def knas(algo_params, search_space, mp, cfg):
             m = -1
         elif cfg['compression_method'].startswith('k_means_coreset') and space_size <= 200:
             k = -1
-            q = total_q - q_sum
+            q = min(total_q - q_sum, space_size)
             m = -1
 
 
