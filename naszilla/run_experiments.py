@@ -35,7 +35,7 @@ def run_experiments(args, save_dir):
     # read configuration
     cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
 
-    for compression_method in ['uniform', 'k_medoids', 'k_means_coreset', 'k_means_coreset_orig_dist']:
+    for compression_method in ['k_means_coreset', 'k_means_coreset_orig_dist', 'uniform', 'k_medoids']:
 
         algorithm_results = {}
         algorithm_val_results = {}

@@ -464,14 +464,13 @@ def local_search(search_space,
 
         arch_dicts = []
         while len(arch_dicts) < num_init:
-
-            signal.signal(signal.SIGALRM, signal_handler)
-            signal.alarm(300)  # Ten seconds
             try:
+                signal.signal(signal.SIGALRM, signal_handler)
+                signal.alarm(300)  # 300 seconds
                 arch_dict = search_space.query_arch(random_encoding=random_encoding,
                                                     deterministic=deterministic,
                                                     epochs=epochs)
-            except Exception as msg:
+            except:
                 print("Timed out!")
 
             if search_space.get_hash(arch_dict['spec']) not in query_dict:
