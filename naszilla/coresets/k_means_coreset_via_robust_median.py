@@ -87,8 +87,8 @@ def k_means_coreset_via_robust_median(P,
     while tau_for_the_original_set * P.shape[0] > coreset_iteration_sample_size:
         idxes = np.random.choice(P.shape[0], np.min([P.shape[0], median_sample_size]), replace=False)
         sample_for_median = P[idxes]
-        if not dist_matrix is None:
-            sample_for_median_dist_matrix = dist_matrix[idxes][:, idxes]
+
+        sample_for_median_dist_matrix = None if dist_matrix is None else  dist_matrix[idxes][:, idxes]
         if random_generation:
             robust_median_q_idxes = np.random.choice(P.shape[0], 1)
             robust_median_q = P[robust_median_q_idxes].flatten()
