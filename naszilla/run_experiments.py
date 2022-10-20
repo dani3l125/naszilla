@@ -10,7 +10,7 @@ import yaml
 from cycler import cycler
 import matplotlib.pyplot as plt
 
-from .params import *
+from naszilla.params import *
 from naszilla.nas_benchmarks import Nasbench101, Nasbench201, Nasbench301, KNasbench201
 from naszilla.nas_algorithms import run_nas_algorithm
 
