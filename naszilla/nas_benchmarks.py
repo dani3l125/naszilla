@@ -540,7 +540,7 @@ class KNasbench201(Nasbench201):
             if isinstance(self.compression_kwargs['k'], list):
                 self.k_for_coreset = self.compression_kwargs['k']
             else:
-                self.k_for_coreset = np.ones[50] * self.compression_kwargs['k']
+                self.k_for_coreset = np.ones([50]) * self.compression_kwargs['k']
 
         self._labels = np.zeros(len(self.nasbench))
 
