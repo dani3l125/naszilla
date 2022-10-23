@@ -70,7 +70,8 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
     if 'loss' not in ps:
         ps['loss'] = DEFAULT_LOSS
 
-    result, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], DEFAULT_LOSS)
+    result, val_result = compute_best_test_losses(data, DEFAULT_K, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg\
+            else compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], 0, DEFAULT_LOSS)
     return result, val_result, data, cluster_sizes_list
 
 
@@ -184,8 +185,8 @@ def knas(algo_params, search_space, mp, cfg):
             raise NotImplementedError()
         final_data.extend(data)
         # if algo_name == 'pknas':
-        _, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], DEFAULT_LOSS)
-        print(f'\n Result: {val_result} Optimal: {search_space.get_best_arch_acc()}\n#####')
+        _, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], q_sum, DEFAULT_LOSS)
+        print(f'\n Result: {val_result} Optimal: {search_space.get_best_arch_loss()}\n#####')
 
         if k != -1:  # efficiency
             search_space.choose_clusters(data, int(m))
@@ -196,7 +197,7 @@ def knas(algo_params, search_space, mp, cfg):
     return final_data
 
 
-def compute_best_test_losses(data, k, total_queries, loss):
+def compute_best_test_losses(data, k, total_queries, start_query, loss):
     """
     Given full data from a completed nas algorithm,
     output the test error of the arch with the best val error 
@@ -207,7 +208,7 @@ def compute_best_test_losses(data, k, total_queries, loss):
     if len(data) == 0:
         print('Result output is empty.')
         return
-    for query in range(k, total_queries + k, k):
+    for query in range(k + start_query, total_queries + k + start_query, k):
         best_arch = sorted(data[:query], key=lambda i: i[loss])[0]
         val_error = best_arch['val_loss']
         test_error = best_arch['test_loss']
@@ -235,7 +236,7 @@ def random_search(search_space,
 
     if verbose:
         top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
-        print('random, query {}, top 5 losses {}'.format(total_queries, top_5_loss))
+        print('random, query {}, top 5 losses in current iteration {}'.format(total_queries, top_5_loss))
     return data
 
 
@@ -293,7 +294,7 @@ def evolution_search(search_space,
 
         if verbose and (query % k == 0):
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
-            print('evolution, query {}, top 5 losses {}'.format(query, top_5_loss))
+            print('evolution, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
 
         query += 1
     return data
@@ -430,7 +431,7 @@ def bananas(search_space,
 
         if verbose:
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
-            print('{}, query {}, top 5 losses {}'.format(predictor, query, top_5_loss))
+            print('{}, query {}, top 5 losses in current iteration {}'.format(predictor, query, top_5_loss))
 
         # we just finished performing k queries
         query += k
@@ -526,7 +527,7 @@ def local_search(search_space,
 
         if verbose:
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
-            print('local_search, query {}, top 5 losses {}'.format(query, top_5_loss))
+            print('local_search, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
 
 
 def gcn_predictor(search_space,
@@ -586,7 +587,7 @@ def gcn_predictor(search_space,
 
     if verbose:
         top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
-        print('GCN predictor, top 5 losses: {}'.format(top_5_loss))
+        print('GCN predictor, top 5 losses in current iteration: {}'.format(top_5_loss))
 
     return data
 
