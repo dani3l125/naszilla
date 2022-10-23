@@ -209,7 +209,7 @@ def compute_best_test_losses(data, k, total_queries, start_query, loss):
         print('Result output is empty.')
         return
     for query in range(k + start_query, total_queries + k + start_query, k):
-        best_arch = sorted(data[:query], key=lambda i: i[loss])[0]
+        best_arch = sorted(data[:query + start_query], key=lambda i: i[loss])[0]
         val_error = best_arch['val_loss']
         test_error = best_arch['test_loss']
         results.append((query, test_error))
