@@ -149,7 +149,6 @@ def knas(algo_params, search_space, mp, cfg):
 
 
         ps['total_queries'] = q
-        q_sum += q
         print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
 
         if algo_name == 'pknas':
@@ -187,6 +186,8 @@ def knas(algo_params, search_space, mp, cfg):
         # if algo_name == 'pknas':
         _, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], q_sum, DEFAULT_LOSS)
         print(f'\n Result: {val_result} Optimal: {search_space.get_best_arch_loss()}\n#####')
+        q_sum += q
+
 
         if k != -1:  # efficiency
             search_space.choose_clusters(data, int(m))
