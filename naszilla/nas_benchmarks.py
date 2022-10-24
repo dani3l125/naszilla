@@ -810,13 +810,10 @@ class KNasbench201(Nasbench201):
         start = time.time()
         # When m is 0, choose it automatically to save query-data ratio
         best_dicts = sorted(data, key=lambda x: x['val_loss'])
-        coreset = set(KNasbench201.nasbench.evaluated_indexes)
         KNasbench201.nasbench = KNasbench201.old_nasbench
+        # Remove duplicates
+        best_dicts = list({best_dict['spec']['string']:best_dict for best_dict in best_dicts}.values())
         best_dicts = best_dicts[:m]
-        set_of_centers = set()
-        for dict in best_dicts:
-            set_of_centers.add(self.nasbench.archstr2index[dict['spec']['string']])
-        print('Number of different centers in first m  centers = {}'.format(len(set_of_centers)))# there is val_loss also.
         remove_indices = set(KNasbench201.nasbench.evaluated_indexes)
         for best_dict in best_dicts:
             cluster_idx = self.cluster_by_arch(best_dict['spec'])
@@ -825,10 +822,7 @@ class KNasbench201(Nasbench201):
             remove_indices = remove_indices - set(real_indexes)
         remove_indices = list(remove_indices)
         self.remove_by_indices(remove_indices)
-        inter = len(coreset.intersection(set(KNasbench201.nasbench.evaluated_indexes)))
         print(f'\nSpace updated to clusters.\ntime: {time.time() - start}\nsize:{len(self.nasbench)}')
-        print(f'Intersection with coreset size = {inter}')
-
         self._is_updated_points = False
 
     def get_sizes_list(self):
