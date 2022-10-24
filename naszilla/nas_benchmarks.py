@@ -812,7 +812,11 @@ class KNasbench201(Nasbench201):
         best_dicts = sorted(data, key=lambda x: x['val_loss'])
         coreset = set(KNasbench201.nasbench.evaluated_indexes)
         KNasbench201.nasbench = KNasbench201.old_nasbench
-        best_dicts = best_dicts[:m]  # there is val_loss also.
+        best_dicts = best_dicts[:m]
+        set_of_centers = set()
+        for dict in best_dicts:
+            set_of_centers.add(self.nasbench.archstr2index[dict['spec']['string']])
+        print('Number of different centers in first m  centers = {}'.format(len(set_of_centers)))# there is val_loss also.
         remove_indices = set(KNasbench201.nasbench.evaluated_indexes)
         for best_dict in best_dicts:
             cluster_idx = self.cluster_by_arch(best_dict['spec'])

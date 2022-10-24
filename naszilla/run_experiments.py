@@ -14,8 +14,8 @@ from naszilla.params import *
 from naszilla.nas_benchmarks import Nasbench101, Nasbench201, Nasbench301, KNasbench201
 from naszilla.nas_algorithms import run_nas_algorithm
 
-def run_experiments(args, save_dir):
 
+def run_experiments(args, save_dir):
     # set up arguments
     trials = args.trials
     queries = args.queries
@@ -35,7 +35,7 @@ def run_experiments(args, save_dir):
     # read configuration
     cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
 
-    for compression_method in ['k_means_coreset', 'k_means_coreset_orig_dist', 'uniform', 'k_medoids']:
+    for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
 
         algorithm_results = {}
         algorithm_val_results = {}
@@ -58,7 +58,8 @@ def run_experiments(args, save_dir):
                     from naszilla.nas_benchmarks import KNasbench201
                     search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
                         KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
-                                     compression_method=compression_method, compression_args=cfg['k_means_coreset_args'],
+                                     compression_method=compression_method,
+                                     compression_args=cfg['k_means_coreset_args'],
                                      points_alg='evd')
                 elif ss == 'nasbench_301':
                     if args.k_alg:
@@ -71,7 +72,7 @@ def run_experiments(args, save_dir):
 
                 starttime = time.time()
                 # this line runs the nas algorithm and returns the result
-                result, val_result, run_datum, cluster_sizes_list =\
+                result, val_result, run_datum, cluster_sizes_list = \
                     run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg, cfg)
 
                 result = np.round(result, 5)
@@ -86,13 +87,12 @@ def run_experiments(args, save_dir):
                             d.pop(key)
 
                 # add walltime, results, run_data
-                walltimes.append(time.time()-starttime)
+                walltimes.append(time.time() - starttime)
                 results.append(result)
                 val_results.append(val_result)
                 run_data.append(run_datum)
-                
-                del KNasbench201
 
+                del KNasbench201
 
             for i in range(len(results)):
                 results[i] = results[i].T[1]
@@ -101,7 +101,8 @@ def run_experiments(args, save_dir):
             val_results = np.stack(val_results, axis=0)
 
             algorithm_results[algorithm_params[j]['algo_name']] = (np.mean(results, axis=0), np.std(results, axis=0))
-            algorithm_val_results[algorithm_params[j]['algo_name']] = (np.mean(val_results, axis=0), np.std(val_results, axis=0))
+            algorithm_val_results[algorithm_params[j]['algo_name']] = (
+            np.mean(val_results, axis=0), np.std(val_results, axis=0))
 
             # print and pickle results
             filename = os.path.join(save_dir, '{}_{}.pkl'.format(out_file, i))
@@ -147,18 +148,20 @@ def run_experiments(args, save_dir):
             sota_val_result = 100 - np.load(f'sota_results/{args.algo_params}_{args.dataset}_val.npy')
             result = 100 - algorithm_results[algo_name][0]
             val_result = 100 - algorithm_val_results[algo_name][0]
-            ax1.plot(np.arange(10 , 301 ,10), sota_result, '--')
-            ax1.plot(np.arange(10, 301, 10), result, '^-')
-            ax1.plot(np.arange(10, 301, 10), sota_val_result, '--')
-            ax1.plot(np.arange(10, 301, 10), val_result, '^-')
+            ax1.plot(np.arange(10, 301, 1), sota_result, '--')
+            ax1.plot(np.arange(10, 301, 1), result, '^-')
+            ax1.plot(np.arange(10, 301, 1), sota_val_result, '--')
+            ax1.plot(np.arange(10, 301, 1), val_result, '^-')
+            np.save(
+                'plots/src_data/{}_{}_{}_{}_val.png'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                val_result)
+            np.save(
+                'plots/src_data/{}_{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                result)
         plt.savefig('plots/{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method))
 
 
-
-
-
 def main(args):
-
     # make save directory
     save_dir = args.save_dir
     if not os.path.exists(save_dir):
@@ -175,19 +178,20 @@ def main(args):
     # set up logging
     log_format = '%(asctime)s %(message)s'
     logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-        format=log_format, datefmt='%m/%d %I:%M:%S %p')
+                        format=log_format, datefmt='%m/%d %I:%M:%S %p')
     fh = logging.FileHandler(os.path.join(save_dir, 'log.txt'))
     fh.setFormatter(logging.Formatter(log_format))
     logging.getLogger().addHandler(fh)
     logging.info(args)
 
     run_experiments(args, save_path)
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Args for BANANAS experiments')
     parser.add_argument('--trials', type=int, default=500, help='Number of trials')
-    parser.add_argument('--queries', type=int, default=150, help='Max number of queries/evaluations each NAS algorithm gets')
+    parser.add_argument('--queries', type=int, default=150,
+                        help='Max number of queries/evaluations each NAS algorithm gets')
     parser.add_argument('--search_space', type=str, default='nasbench_101', help='nasbench_101, _201, or _301')
     parser.add_argument('--dataset', type=str, default='cifar10', help='cifar10, 100, or imagenet (for nasbench201)')
     parser.add_argument('--mf', type=bool, default=False, help='Multi fidelity: true or false (for nasbench101)')
@@ -198,8 +202,8 @@ if __name__ == "__main__":
     parser.add_argument('--save_specs', type=bool, default=False, help='save the architecture specs')
     parser.add_argument('--save_sota', type=int, default=0, help='save the convergence result to a numpy array')
     parser.add_argument('--k_alg', type=int, default=0, help='use iterative k algorithm')
-    parser.add_argument('--cfg', type=str, default='/home/daniel/naszilla/naszilla/knas_config.yaml', help='path to configuration file')
-
+    parser.add_argument('--cfg', type=str, default='/home/daniel/naszilla/naszilla/knas_config.yaml',
+                        help='path to configuration file')
 
     args = parser.parse_args()
     main(args)
