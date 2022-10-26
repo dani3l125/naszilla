@@ -2,7 +2,7 @@ iterations: 3
 
 distance: 'real'  # Choose: real, lev, adj, path, nasbot
 
-threads: 16
+threads: 64
 
 fullKnas: False  # completely deterministic or not
 

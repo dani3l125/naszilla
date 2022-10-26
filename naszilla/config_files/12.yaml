@@ -2,7 +2,7 @@ iterations: 5
 
 distance: 'lev'  # Choose: real, lev, adj, path, nasbot
 
-threads: 16
+threads: 64
 
 compression_method: 'k_means_coreset_orig_dist' # k_means_coreset, k_medoids
 
