@@ -557,7 +557,7 @@ class KNasbench201(Nasbench201):
 
         if os.path.isfile(f'distances/{self.dist_type}'):
             print('Using pre-computed distances...')
-            KNasbench201._distances = np.load(f'distances/{self.dist_type}')
+            KNasbench201._distances = np.load(f'distances/{self.dist_type}_dist.npy')
             return KNasbench201._distances
 
         size = len(self.nasbench)
