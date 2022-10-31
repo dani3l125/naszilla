@@ -25,7 +25,6 @@ tqdm
 xgboost
 python-Levenshtein
 pyyaml
-cupy
 scikit-learn-extra
 torch-scatter -f https://data.pyg.org/whl/torch-1.11.0+$cu116.html
 torch-sparse -f https://data.pyg.org/whl/torch-1.11.0+$cu116.html
