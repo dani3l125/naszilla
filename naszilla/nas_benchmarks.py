@@ -552,8 +552,12 @@ class KNasbench201(Nasbench201):
 
     @property
     def distances(self):
-        start = time.time()
         if KNasbench201._is_updated_distances:
+            return KNasbench201._distances
+
+        if os.path.isfile(f'distances/{self.dist_type}'):
+            print('Using pre-computed distances...')
+            KNasbench201._distances = np.load(f'distances/{self.dist_type}')
             return KNasbench201._distances
 
         size = len(self.nasbench)

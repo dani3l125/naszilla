@@ -7,6 +7,7 @@ import pickle
 import numpy as np
 import copy
 import yaml
+import multiprocessing
 from cycler import cycler
 import matplotlib.pyplot as plt
 
@@ -42,20 +43,19 @@ def run_experiments(args, save_dir):
         for j in range(num_algos):
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
-            results = []
-            val_results = []
-            walltimes = []
-            run_data = []
+            manager = multiprocessing.Manager()
+            results = manager.dict()
+            val_results = manager.dict()
+            walltimes = manager.dict()
+            run_data = manager.dict()
 
-            for i in range(trials):
-
+            def trial(i):
                 if ss == 'nasbench_101':
                     if args.k_alg:
                         print('K alg not supported yet!')
                         raise NotImplementedError()
                     search_space = Nasbench101(mf=mf)
                 elif ss == 'nasbench_201':
-                    from naszilla.nas_benchmarks import KNasbench201
                     search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
                         KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
                                      compression_method=compression_method,
@@ -87,12 +87,24 @@ def run_experiments(args, save_dir):
                             d.pop(key)
 
                 # add walltime, results, run_data
-                walltimes.append(time.time() - starttime)
-                results.append(result)
-                val_results.append(val_result)
-                run_data.append(run_datum)
+                walltimes[i] = time.time() - starttime
+                results[i] = result
+                val_results[i] = val_result
+                run_data[i] = run_datum
 
-                del KNasbench201
+            jobs = []
+            for i in range(trials):
+                p = multiprocessing.Process(target=trial, args=(i,))
+                jobs.append(p)
+                p.start()
+
+            for proc in jobs:
+                proc.join()
+
+            results = list(results.values())
+            val_results = list(val_results.values())
+            walltimes = list(walltimes.values())
+            run_data = list(run_data.values())
 
             for i in range(len(results)):
                 results[i] = results[i].T[1]
