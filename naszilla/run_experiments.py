@@ -156,8 +156,8 @@ def run_experiments(args, save_dir):
         ax1.set_prop_cycle(custom_cycler)
         ax2.set_prop_cycle(custom_cycler)
         for algo_name in algorithm_results.keys():
-            sota_result = 100 - np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
-            sota_val_result = 100 - np.load(f'sota_results/{args.algo_params}_{args.dataset}_val.npy')
+            sota_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}.npy')
+            sota_val_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_val.npy')
             result = 100 - algorithm_results[algo_name][0]
             val_result = 100 - algorithm_val_results[algo_name][0]
             ax1.plot(np.arange(10, 301, 1), sota_result, '--')
