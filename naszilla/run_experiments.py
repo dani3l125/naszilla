@@ -92,10 +92,10 @@ def run_experiments(args, save_dir):
 
         for j in range(num_algos):
 
-            walltimes[algorithm_params[j]['algo_names']] = {}
-            results[algorithm_params[j]['algo_names']] = {}
-            val_results[algorithm_params[j]['algo_names']] = {}
-            run_data[algorithm_params[j]['algo_names']] = {}
+            walltimes[algorithm_params[j]['algo_name']] = {}
+            results[algorithm_params[j]['algo_name']] = {}
+            val_results[algorithm_params[j]['algo_name']] = {}
+            run_data[algorithm_params[j]['algo_name']] = {}
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
             for i in range(trials):
