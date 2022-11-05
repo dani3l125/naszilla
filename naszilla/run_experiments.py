@@ -38,12 +38,14 @@ def run_experiments(args, save_dir):
 
     for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
 
-        algorithm_results = {}
-        algorithm_val_results = {}
+        manager = multiprocessing.Manager()
+        algorithm_results = manager.dict()
+        algorithm_val_results = manager.dict()
+        jobs = []
+
         for j in range(num_algos):
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
-            manager = multiprocessing.Manager()
             results = manager.dict()
             val_results = manager.dict()
             walltimes = manager.dict()
@@ -92,29 +94,25 @@ def run_experiments(args, save_dir):
                 val_results[i] = val_result
                 run_data[i] = run_datum
 
-            jobs = []
             for i in range(trials):
                 p = multiprocessing.Process(target=trial, args=(i,))
                 jobs.append(p)
                 p.start()
 
-            for proc in jobs:
-                proc.join()
-
-            results = list(results.values())
-            val_results = list(val_results.values())
+            tmp_results = list(results.values())
+            tmp_val_results = list(val_results.values())
             walltimes = list(walltimes.values())
             run_data = list(run_data.values())
 
-            for i in range(len(results)):
-                results[i] = results[i].T[1]
-                val_results[i] = val_results[i].T[1]
-            results = np.stack(results, axis=0)
-            val_results = np.stack(val_results, axis=0)
+            for i in range(len(tmp_results)):
+                tmp_results[i] = tmp_results[i].T[1]
+                tmp_val_results[i] = tmp_val_results[i].T[1]
+            tmp_results = np.stack(results, axis=0)
+            tmp_val_results = np.stack(val_results, axis=0)
 
-            algorithm_results[algorithm_params[j]['algo_name']] = (np.mean(results, axis=0), np.std(results, axis=0))
+            algorithm_results[algorithm_params[j]['algo_name']] = (np.mean(tmp_results, axis=0), np.std(tmp_results, axis=0))
             algorithm_val_results[algorithm_params[j]['algo_name']] = (
-            np.mean(val_results, axis=0), np.std(val_results, axis=0))
+            np.mean(tmp_val_results, axis=0), np.std(tmp_val_results, axis=0))
 
             # print and pickle results
             filename = os.path.join(save_dir, '{}_{}.pkl'.format(out_file, i))
@@ -128,24 +126,8 @@ def run_experiments(args, save_dir):
                 pickle.dump([algorithm_params, metann_params, results, walltimes, run_data, val_results], f)
                 f.close()
 
-        # if args.save_sota:
-        #     np.save(f'sota_results/{args.algo_params}_{args.dataset}.npy', result_mean)
-        #     np.save(f'sota_results/{args.algo_params}_{args.dataset}_val.npy', val_result_mean)
-
-        # else:
-        #     sota_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
-        #     sota_val_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}_val.npy')
-        #     x_axis1 = np.arange(10, len(sota_result) * 10 + 1, 10)
-        #     x_axis2 = np.arange(10, len(result_mean) * 10 + 1, 10)
-        #     plt.plot(x_axis1, sota_result, color='green', label=f'{args.algo_params}')
-        #     plt.plot(x_axis2, result_mean, label=f'IKNAS on {args.algo_params}')
-        #     plt.savefig('plots/{}_{}_{}_{}.png'.format(cfg['figName'], args.algo_params, args.dataset, compression_method))
-        #     plt.figure()
-        #     plt.plot(x_axis1, sota_val_result, color='green', label=f'{args.algo_params}')
-        #     plt.plot(x_axis2, val_result_mean, label=f'IKNAS on {args.algo_params}')
-        #     plt.savefig('plots/{}_{}_{}_{}_val.png'.format(cfg['figName'], args.algo_params, args.dataset, compression_method))
-        #
-        #     np.save('paper_plots/{}_{}_{}_{}.npy'.format(cfg['figName'], args.algo_params, args.dataset, compression_method))
+        for proc in jobs:
+            proc.join()
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4.5), tight_layout=True)
         custom_cycler = cycler(color=['r', 'r', 'g', 'g', 'b', 'b', 'y', 'y'])
@@ -160,10 +142,10 @@ def run_experiments(args, save_dir):
             sota_val_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_val.npy')
             result = 100 - algorithm_results[algo_name][0]
             val_result = 100 - algorithm_val_results[algo_name][0]
-            ax1.plot(np.arange(10, 301, 1), sota_result, '--')
-            ax1.plot(np.arange(10, 301, 1), result, '^-')
-            ax1.plot(np.arange(10, 301, 1), sota_val_result, '--')
-            ax1.plot(np.arange(10, 301, 1), val_result, '^-')
+            ax1.plot(np.arange(10, 301, 10), sota_result, '--')
+            ax1.plot(np.arange(1, 301, 1), result, '^-')
+            ax1.plot(np.arange(10, 301, 10), sota_val_result, '--')
+            ax1.plot(np.arange(1, 301, 1), val_result, '^-')
             np.save(
                 'plots/src_data/{}_{}_{}_{}_val.png'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 val_result)
@@ -214,6 +196,8 @@ if __name__ == "__main__":
     parser.add_argument('--save_specs', type=bool, default=False, help='save the architecture specs')
     parser.add_argument('--save_sota', type=int, default=0, help='save the convergence result to a numpy array')
     parser.add_argument('--k_alg', type=int, default=0, help='use iterative k algorithm')
+    parser.add_argument('--sample_size_graphs', type=int, default=0, help='plot graphs with coreset size independent variable')
+    parser.add_argument('--k_graphs', type=int, default=0, help='plot graphs with coreset size independent variable')
     parser.add_argument('--cfg', type=str, default='/home/daniel/naszilla/naszilla/knas_config.yaml',
                         help='path to configuration file')
 

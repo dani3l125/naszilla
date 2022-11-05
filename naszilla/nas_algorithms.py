@@ -22,9 +22,11 @@ DEFAULT_NUM_INIT = 10
 DEFAULT_K = 10
 DEFAULT_TOTAL_QUERIES = 150
 DEFAULT_LOSS = 'val_loss'
+SIG_DONE = True
 
 def signal_handler(signum, frame):
-    raise Exception("Timed out!")
+    if not SIG_DONE:
+        raise Exception("Timed out!")
 
 
 def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
@@ -467,13 +469,17 @@ def local_search(search_space,
         arch_dicts = []
         while len(arch_dicts) < num_init:
             try:
+                SIG_DONE = False
                 signal.signal(signal.SIGALRM, signal_handler)
                 signal.alarm(300)  # 300 seconds
                 arch_dict = search_space.query_arch(random_encoding=random_encoding,
                                                     deterministic=deterministic,
                                                     epochs=epochs)
+                SIG_DONE = True
+
             except:
                 print("Timed out!")
+                return data
 
             if search_space.get_hash(arch_dict['spec']) not in query_dict:
                 query_dict[search_space.get_hash(arch_dict['spec'])] = 1
