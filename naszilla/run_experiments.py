@@ -41,68 +41,77 @@ def run_experiments(args, save_dir):
         manager = multiprocessing.Manager()
         algorithm_results = manager.dict()
         algorithm_val_results = manager.dict()
+        results = manager.dict()
+        val_results = manager.dict()
+        walltimes = manager.dict()
+        run_data = manager.dict()
         jobs = []
 
+        def trial(i, j):
+            if ss == 'nasbench_101':
+                if args.k_alg:
+                    print('K alg not supported yet!')
+                    raise NotImplementedError()
+                search_space = Nasbench101(mf=mf)
+            elif ss == 'nasbench_201':
+                search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
+                    KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
+                                 compression_method=compression_method,
+                                 compression_args=cfg['k_means_coreset_args'],
+                                 points_alg='evd')
+            elif ss == 'nasbench_301':
+                if args.k_alg:
+                    print('K alg not supported yet!')
+                    raise NotImplementedError()
+                search_space = Nasbench301()
+            else:
+                print('Invalid search space')
+                raise NotImplementedError()
+
+            starttime = time.time()
+            # this line runs the nas algorithm and returns the result
+            result, val_result, run_datum, cluster_sizes_list = \
+                run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg, cfg)
+
+            result = np.round(result, 5)
+            val_result = np.round(val_result, 5)
+
+            # remove unnecessary dict entries that take up space
+            for d in run_datum:
+                if not save_specs:
+                    d.pop('spec')
+                for key in ['encoding', 'adj', 'path', 'dist_to_min']:
+                    if key in d:
+                        d.pop(key)
+
+            # add walltime, results, run_data
+            walltimes[algorithm_params[j]['algo_name']][i] = time.time() - starttime
+            results[algorithm_params[j]['algo_name']][i] = result
+            val_results[algorithm_params[j]['algo_name']][i] = val_result
+            run_data[algorithm_params[j]['algo_name']][i] = run_datum
+
         for j in range(num_algos):
+
+            walltimes[algorithm_params[j]['algo_names']] = {}
+            results[algorithm_params[j]['algo_names']] = {}
+            val_results[algorithm_params[j]['algo_names']] = {}
+            run_data[algorithm_params[j]['algo_names']] = {}
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
-            results = manager.dict()
-            val_results = manager.dict()
-            walltimes = manager.dict()
-            run_data = manager.dict()
-
-            def trial(i):
-                if ss == 'nasbench_101':
-                    if args.k_alg:
-                        print('K alg not supported yet!')
-                        raise NotImplementedError()
-                    search_space = Nasbench101(mf=mf)
-                elif ss == 'nasbench_201':
-                    search_space = Nasbench201(dataset=dataset) if not args.k_alg else \
-                        KNasbench201(dataset=dataset, dist_type=cfg['distance'], n_threads=cfg['threads'],
-                                     compression_method=compression_method,
-                                     compression_args=cfg['k_means_coreset_args'],
-                                     points_alg='evd')
-                elif ss == 'nasbench_301':
-                    if args.k_alg:
-                        print('K alg not supported yet!')
-                        raise NotImplementedError()
-                    search_space = Nasbench301()
-                else:
-                    print('Invalid search space')
-                    raise NotImplementedError()
-
-                starttime = time.time()
-                # this line runs the nas algorithm and returns the result
-                result, val_result, run_datum, cluster_sizes_list = \
-                    run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg, cfg)
-
-                result = np.round(result, 5)
-                val_result = np.round(val_result, 5)
-
-                # remove unnecessary dict entries that take up space
-                for d in run_datum:
-                    if not save_specs:
-                        d.pop('spec')
-                    for key in ['encoding', 'adj', 'path', 'dist_to_min']:
-                        if key in d:
-                            d.pop(key)
-
-                # add walltime, results, run_data
-                walltimes[i] = time.time() - starttime
-                results[i] = result
-                val_results[i] = val_result
-                run_data[i] = run_datum
-
             for i in range(trials):
-                p = multiprocessing.Process(target=trial, args=(i,))
+                p = multiprocessing.Process(target=trial, args=(i,j,))
                 jobs.append(p)
                 p.start()
 
-            tmp_results = list(results.values())
-            tmp_val_results = list(val_results.values())
-            walltimes = list(walltimes.values())
-            run_data = list(run_data.values())
+        for proc in jobs:
+            proc.join()
+
+        for j in range(num_algos):
+
+            tmp_results = list(results[algorithm_params[j]['algo_names']].values())
+            tmp_val_results = list(val_results[algorithm_params[j]['algo_names']].values())
+            walltimes = list(walltimes[algorithm_params[j]['algo_names']].values())
+            run_data = list(run_data[algorithm_params[j]['algo_names']].values())
 
             for i in range(len(tmp_results)):
                 tmp_results[i] = tmp_results[i].T[1]
@@ -126,9 +135,6 @@ def run_experiments(args, save_dir):
                 pickle.dump([algorithm_params, metann_params, results, walltimes, run_data, val_results], f)
                 f.close()
 
-        for proc in jobs:
-            proc.join()
-
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4.5), tight_layout=True)
         custom_cycler = cycler(color=['r', 'r', 'g', 'g', 'b', 'b', 'y', 'y'])
         ax1.set_xlabel('Queries')
@@ -143,9 +149,9 @@ def run_experiments(args, save_dir):
             result = 100 - algorithm_results[algo_name][0]
             val_result = 100 - algorithm_val_results[algo_name][0]
             ax1.plot(np.arange(10, 301, 10), sota_result, '--')
-            ax1.plot(np.arange(1, 301, 1), result, '^-')
+            ax1.errorbar(x=np.arange(1, 301, 1), y=result, yerr=algorithm_results[algo_name][1], fmt='^-')
             ax1.plot(np.arange(10, 301, 10), sota_val_result, '--')
-            ax1.plot(np.arange(1, 301, 1), val_result, '^-')
+            ax1.errorbar(x=np.arange(1, 301, 1), y=val_result, yerr=algorithm_val_results[algo_name][1], fmt='^-')
             np.save(
                 'plots/src_data/{}_{}_{}_{}_val.png'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 val_result)
