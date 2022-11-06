@@ -113,6 +113,13 @@ def run_experiments(args, save_dir):
             walltimes = list(walltimes[algorithm_params[j]['algo_name']].values())
             run_data = list(run_data[algorithm_params[j]['algo_name']].values())
 
+            for idx in range(len(tmp_results)):
+                for l in [tmp_results, tmp_val_results]:
+                    print(l)
+                    if isinstance(l[idx], np.ndarray):
+                        if not l[idx].size:
+                            del l[idx]
+
             for i in range(len(tmp_results)):
                 tmp_results[i] = tmp_results[i].T[1]
                 tmp_val_results[i] = tmp_val_results[i].T[1]
