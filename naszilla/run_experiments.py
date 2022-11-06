@@ -108,10 +108,10 @@ def run_experiments(args, save_dir):
 
         for j in range(num_algos):
 
-            tmp_results = list(results[algorithm_params[j]['algo_names']].values())
-            tmp_val_results = list(val_results[algorithm_params[j]['algo_names']].values())
-            walltimes = list(walltimes[algorithm_params[j]['algo_names']].values())
-            run_data = list(run_data[algorithm_params[j]['algo_names']].values())
+            tmp_results = list(results[algorithm_params[j]['algo_name']].values())
+            tmp_val_results = list(val_results[algorithm_params[j]['algo_name']].values())
+            walltimes = list(walltimes[algorithm_params[j]['algo_name']].values())
+            run_data = list(run_data[algorithm_params[j]['algo_name']].values())
 
             for i in range(len(tmp_results)):
                 tmp_results[i] = tmp_results[i].T[1]
