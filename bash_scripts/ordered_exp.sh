@@ -4,17 +4,17 @@ TRIALS=1
 
 for i in 6 7 8 9
 do
-  screen -L -Logfile cidar10_exp$i -S \
+  screen -L -Logfile cidar10_exp$i -S cidar10_exp$i\
     "/home/daniel/anaconda3/envs/knas/bin/python /home/daniel/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \
   --algo_params all_algos --queries 300 --trials $TRIALS --k_alg 1 --cfg /home/daniel/naszilla/naszilla/config_files/$i.yaml\
     --dataset cifar10"
 
-  screen -L -Logfile cidar10_exp$i -S \
+  screen -L -Logfile cidar100_exp$i -S cidar100_exp$i\
     "/home/daniel/anaconda3/envs/knas/bin/python /home/daniel/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \
   --algo_params all_algos --queries 300 --trials $TRIALS --k_alg 1 --cfg /home/daniel/naszilla/naszilla/config_files/$i.yaml\
     --dataset cifar100"
 
-  screen -L -Logfile cidar10_exp$i -S \
+  screen -L -Logfile imagenet_exp$i -S imagenet_exp$i\
     "/home/daniel/anaconda3/envs/knas/bin/python /home/daniel/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \
   --algo_params all_algos --queries 300 --trials $TRIALS --k_alg 1 --cfg /home/daniel/naszilla/naszilla/config_files/$i.yaml\
     --dataset ImageNet16-120"
