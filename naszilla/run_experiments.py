@@ -38,13 +38,13 @@ def run_experiments(args, save_dir):
 
     for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
 
-        manager = multiprocessing.Manager()
-        algorithm_results = manager.dict()
-        algorithm_val_results = manager.dict()
-        results = manager.dict()
-        val_results = manager.dict()
-        walltimes = manager.dict()
-        run_data = manager.dict()
+        # manager = multiprocessing.Manager()
+        algorithm_results = {}
+        algorithm_val_results = {}
+        results = {}
+        val_results = {}
+        walltimes = {}
+        run_data = {}
         jobs = []
 
         def trial(i, j):
@@ -92,10 +92,10 @@ def run_experiments(args, save_dir):
 
         for j in range(num_algos):
 
-            walltimes[algorithm_params[j]['algo_name']] = manager.dict()
-            results[algorithm_params[j]['algo_name']] = manager.dict()
-            val_results[algorithm_params[j]['algo_name']] = manager.dict()
-            run_data[algorithm_params[j]['algo_name']] = manager.dict()
+            walltimes[algorithm_params[j]['algo_name']] = {}
+            results[algorithm_params[j]['algo_name']] = {}
+            val_results[algorithm_params[j]['algo_name']] = {}
+            run_data[algorithm_params[j]['algo_name']] = {}
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
             for i in range(trials):
