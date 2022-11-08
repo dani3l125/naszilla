@@ -112,6 +112,7 @@ def run_experiments(args, save_dir):
             tmp_val_results = list(val_results[algorithm_params[j]['algo_name']].values())
             walltimes = list(walltimes[algorithm_params[j]['algo_name']].values())
             run_data = list(run_data[algorithm_params[j]['algo_name']].values())
+            print(f'\n\n$$$$$$$$$Lenths:{len(tmp_results)}, {len(tmp_val_results)}')
 
             # for idx in range(len(tmp_results)):
             #     for l in [tmp_results, tmp_val_results]:
