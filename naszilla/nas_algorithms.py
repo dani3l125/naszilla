@@ -10,6 +10,7 @@ import tensorflow as tf
 from argparse import Namespace
 from scipy.special import softmax
 
+import naszilla.nas_benchmarks
 from naszilla.acquisition_functions import acq_fn
 from naszilla.meta_neural_net import MetaNeuralnet
 from naszilla.bo.bo.probo import ProBO
@@ -100,6 +101,15 @@ def schedule_geometric_by_sum(ratio, s, n):
     r_n = ratio ** n
     first = (s * (1 - ratio)) / (1 - r_n)
     return np.round(np.geomspace(first, first * r_n / ratio, n))[::-1].astype(int)
+
+class PermutationsController:
+    def __init__(self, alpha_size, search_space: naszilla.nas_benchmarks.KNasbench201):
+        self.search_space = search_space
+        self.alpha_size = alpha_size
+        self.trials = []
+        self.current_trial = []
+    def InsertIteration(self):
+        print()
 
 
 def knas(algo_params, search_space, mp, cfg):
