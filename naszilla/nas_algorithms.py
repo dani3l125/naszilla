@@ -103,13 +103,36 @@ def schedule_geometric_by_sum(ratio, s, n):
     return np.round(np.geomspace(first, first * r_n / ratio, n))[::-1].astype(int)
 
 class PermutationsController:
-    def __init__(self, alpha_size, search_space: naszilla.nas_benchmarks.KNasbench201):
+    def __init__(self, search_space: naszilla.nas_benchmarks.KNasbench201, alpha_size=30):
         self.search_space = search_space
+        self.acc_values = np.load('acc_values.npy')
+        if search_space.dataset == 'cifar10':
+            self.acc_values = self.acc_values[0]
+        elif search_space.dataset == 'cifar100':
+            self.acc_values = self.acc_values[1]
+        elif search_space.dataset == 'ImageNet16-120':
+            self.acc_values = self.acc_values[2]
+
+        self.dataset = search_space.dataset if search_space.dataset != 'cifar10' else 'cifar10-valid'
+
         self.alpha_size = alpha_size
         self.trials = []
         self.current_trial = []
     def InsertIteration(self):
-        print()
+        if len(self.search_space) < 10 * self.alpha_size:
+            return
+        # Indices of best archs in space:
+        best_archs_indices = self.acc_values[np.array(self.search_space.old_nasbench.evaluated_indexes)]
+        best_archs_labels = self.search_space.labels[best_archs_indices]
+        oredred_representatives_indexes = self.search_space.coreset_indexes[best_archs_labels]
+        oredred_representatives_labels = self.search_space.labels[oredred_representatives_indexes]
+        # Sanity check
+        if oredred_representatives_labels == best_archs_labels:
+            print("\n||| Permutation controller: sanity check success")
+        else:
+            print("\n||| Permutation controller: sanity check failure")
+        oredred_representatives_acc_values = self.acc_values[oredred_representatives_indexes]
+        oredred_representatives_labels = oredred_representatives_labels[np.argsort(oredred_representatives_acc_values)]
 
 
 def knas(algo_params, search_space, mp, cfg):

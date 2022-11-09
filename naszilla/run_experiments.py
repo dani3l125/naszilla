@@ -7,6 +7,7 @@ import pickle
 import numpy as np
 import copy
 import yaml
+import threading
 import multiprocessing
 from cycler import cycler
 import matplotlib.pyplot as plt
@@ -99,7 +100,8 @@ def run_experiments(args, save_dir):
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
             for i in range(trials):
-                p = multiprocessing.Process(target=trial, args=(i,j,))
+                #p = multiprocessing.Process(target=trial, args=(i,j,))
+                p = threading.Thread(target=trial, args=(i,j,))
                 jobs.append(p)
                 p.start()
 

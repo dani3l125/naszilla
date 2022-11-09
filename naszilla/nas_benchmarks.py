@@ -496,15 +496,15 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd',
-                 is_debug=True
+                 is_debug=False
                  ):
         KNasbench201._is_updated_distances = False
         if not KNasbench201._distances is None:
              del KNasbench201._distances
         KNasbench201._distances = None
-        KNasbench201._coreset_indexes = None
-        if not KNasbench201._coreset_indexes is None:
-             del KNasbench201._coreset_indexes
+        KNasbench201.coreset_indexes = None
+        if not KNasbench201.coreset_indexes is None:
+             del KNasbench201.coreset_indexes
         KNasbench201.old_nasbench = None
         if not KNasbench201.old_nasbench is None:
              del KNasbench201.old_nasbench
@@ -542,7 +542,7 @@ class KNasbench201(Nasbench201):
             else:
                 self.k_for_coreset = np.ones([50]) * self.compression_kwargs['k']
 
-        self._labels = np.zeros(len(self.nasbench))
+        self.labels = np.zeros(len(self.nasbench))
 
     def __len__(self):
         return len(self.nasbench)
@@ -763,52 +763,52 @@ class KNasbench201(Nasbench201):
         print(f'Compression: {self.compression_method}')
 
         if self.compression_method == 'uniform':
-            self._coreset_indexes = np.random.choice(len(KNasbench201.nasbench.evaluated_indexes),k)
+            self.coreset_indexes = np.random.choice(len(KNasbench201.nasbench.evaluated_indexes),k)
             points2coreset_dist_mat = self.distances[KNasbench201.nasbench.evaluated_indexes][
                                       :, KNasbench201.nasbench.evaluated_indexes][
-                                      :, self._coreset_indexes]
-            self._labels = np.argmin(points2coreset_dist_mat, axis=1)
+                                      :, self.coreset_indexes]
+            self.labels = np.argmin(points2coreset_dist_mat, axis=1)
 
         elif self.compression_method == 'k_medoids':
             kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(  # Take distances from current cluster
                 self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes])
-            self._labels = kmedoids.labels_
-            self._coreset_indexes = kmedoids.medoid_indices_
+            self.labels = kmedoids.labels_
+            self.coreset_indexes = kmedoids.medoid_indices_
 
         elif self.compression_method == 'k_means_coreset':
             self.compression_kwargs['k'] = self.k_for_coreset[iteration]
-            self._coreset_indexes, self._labels = knas_coreset(
+            self.coreset_indexes, self.labels = knas_coreset(
                 self.points, None, **self.compression_kwargs)
-            k = self._coreset_indexes.shape[0]
+            k = self.coreset_indexes.shape[0]
 
         elif self.compression_method == 'k_means_coreset_orig_dist':
             self.compression_kwargs['k'] = self.k_for_coreset[iteration]
-            self._coreset_indexes, self._labels = knas_coreset(
+            self.coreset_indexes, self.labels = knas_coreset(
                 self.points, self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes],
                 **self.compression_kwargs)
-            k = self._coreset_indexes.shape[0]
+            k = self.coreset_indexes.shape[0]
         else:
             raise NotImplementedError('Invalid compression type')
         # self.parallel_remove(remove_indices)
         # self.mutation_tree = MutationTree(KNasbench201.nasbench.meta_archs)
 
-        self.cluster_sizes = np.bincount(self._labels)
+        self.cluster_sizes = np.bincount(self.labels)
         # copy_thread.join()
         remove_indices = list(set(KNasbench201.nasbench.evaluated_indexes) -
                               set(np.array(KNasbench201.nasbench.evaluated_indexes)[
-                                      self._coreset_indexes]))
+                                      self.coreset_indexes]))
         self.remove_by_indices(remove_indices)
         print(f'\nSpace updated to centers.\ntime: {time.time() - start}\nsize:{len(self.nasbench)}\n')
         self.ratio = k / len(KNasbench201.nasbench)
-        self.sizes_list.append(self._coreset_indexes.size)
+        self.sizes_list.append(self.coreset_indexes.size)
         return k
 
     def cluster_by_arch(self, arch):
         if isinstance(arch, dict):
             # _labels indexes are incorrext
-            return self._labels[
+            return self.labels[
                 KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch['string']])]
-        return self._labels[KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch])]
+        return self.labels[KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch])]
 
     def choose_clusters(self, data, m):
         start = time.time()
@@ -821,7 +821,7 @@ class KNasbench201(Nasbench201):
         remove_indices = set(KNasbench201.nasbench.evaluated_indexes)
         for best_dict in best_dicts:
             cluster_idx = self.cluster_by_arch(best_dict['spec'])
-            cluster_elements_indexes_list = np.where(self._labels == cluster_idx)[0]  # Indexes in list only!
+            cluster_elements_indexes_list = np.where(self.labels == cluster_idx)[0]  # Indexes in list only!
             real_indexes = np.array(KNasbench201.nasbench.evaluated_indexes)[cluster_elements_indexes_list]
             remove_indices = remove_indices - set(real_indexes)
         remove_indices = list(remove_indices)
