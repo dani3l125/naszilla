@@ -112,9 +112,13 @@ def run_experiments(args, save_dir):
 
             tmp_results = list(results[algorithm_params[j]['algo_name']].values())
             tmp_val_results = list(val_results[algorithm_params[j]['algo_name']].values())
-            walltimes = list(walltimes[algorithm_params[j]['algo_name']].values())
-            run_data = list(run_data[algorithm_params[j]['algo_name']].values())
-            print(f'\n\n$$$$$$$$$Lenths:{len(tmp_results)}, {len(tmp_val_results)}')
+            tmp_walltimes = list(walltimes[algorithm_params[j]['algo_name']].values())
+            tmp_run_data = list(run_data[algorithm_params[j]['algo_name']].values())
+            print(f'\n\n$$$$$$$$$ Alg: {j} Lenths:{len(tmp_results)}, {len(tmp_val_results)}')
+            print(f'Object: {tmp_results}')
+
+            if not len(tmp_results):
+                pass
 
             # for idx in range(len(tmp_results)):
             #     for l in [tmp_results, tmp_val_results]:
@@ -126,8 +130,8 @@ def run_experiments(args, save_dir):
             for i in range(len(tmp_results)):
                 tmp_results[i] = tmp_results[i].T[1]
                 tmp_val_results[i] = tmp_val_results[i].T[1]
-            tmp_results = np.stack(results, axis=0)
-            tmp_val_results = np.stack(val_results, axis=0)
+            tmp_results = np.stack(tmp_results, axis=0)
+            tmp_val_results = np.stack(tmp_val_results, axis=0)
 
             algorithm_results[algorithm_params[j]['algo_name']] = (np.mean(tmp_results, axis=0), np.std(tmp_results, axis=0))
             algorithm_val_results[algorithm_params[j]['algo_name']] = (
@@ -139,10 +143,10 @@ def run_experiments(args, save_dir):
             print(algorithm_params)
             print(ss)
             print(results)
-            print(walltimes)
+            print(tmp_walltimes)
             print('\n* Saving to file {}'.format(filename))
             with open(filename, 'wb') as f:
-                pickle.dump([algorithm_params, metann_params, results, walltimes, run_data, val_results], f)
+                pickle.dump([algorithm_params, metann_params, results, tmp_walltimes, tmp_run_data, val_results], f)
                 f.close()
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4.5), tight_layout=True)
