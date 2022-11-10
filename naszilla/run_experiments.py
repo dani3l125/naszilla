@@ -118,7 +118,7 @@ def run_experiments(args, save_dir):
             print(f'Object: {tmp_results}')
 
             if not len(tmp_results):
-                pass
+                break
 
             # for idx in range(len(tmp_results)):
             #     for l in [tmp_results, tmp_val_results]:
