@@ -16,6 +16,7 @@ from naszilla.params import *
 from naszilla.nas_benchmarks import Nasbench101, Nasbench201, Nasbench301, KNasbench201
 from naszilla.nas_algorithms import run_nas_algorithm
 
+label_mapping = {'bananas':'BANANAS', 'local_search':'Local search', 'evolution':'Evolutionary search', 'random': 'Random search'}
 
 def run_experiments(args, save_dir):
     # set up arguments
@@ -153,9 +154,9 @@ def run_experiments(args, save_dir):
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4.5), tight_layout=True)
         custom_cycler = cycler(color=['r', 'r', 'g', 'g', 'b', 'b', 'y', 'y'])
         ax1.set_xlabel('Queries')
-        ax1.set_ylabel('Best accuracy')
+        ax1.set_ylabel('Best train accuracy')
         ax2.set_xlabel('Queries')
-        ax2.set_ylabel('Best accuracy')
+        ax2.set_ylabel('Best validation accuracy')
         ax1.set_prop_cycle(custom_cycler)
         ax2.set_prop_cycle(custom_cycler)
         for algo_name in algorithm_results.keys():
@@ -163,10 +164,12 @@ def run_experiments(args, save_dir):
             sota_val_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_val.npy')
             result = 100 - algorithm_results[algo_name][0]
             val_result = 100 - algorithm_val_results[algo_name][0]
-            ax1.plot(np.arange(10, 301, 10), sota_result, '--')
-            ax1.errorbar(x=np.arange(1, 301, 1), y=result, yerr=algorithm_results[algo_name][1], fmt='^-')
-            ax1.plot(np.arange(10, 301, 10), sota_val_result, '--')
-            ax1.errorbar(x=np.arange(1, 301, 1), y=val_result, yerr=algorithm_val_results[algo_name][1], fmt='^-')
+            ax1.plot(np.arange(10, 301, 10), sota_result, '--', label=label_mapping[algo_name]+', SOTA')
+            ax1.errorbar(x=np.arange(1, 301, 1), y=result, yerr=algorithm_results[algo_name][1],
+                         fmt='^-', errorevery=10, label=label_mapping[algo_name]+', ours')
+            ax2.plot(np.arange(10, 301, 10), sota_val_result, '--', label=label_mapping[algo_name]+', SOTA')
+            ax2.errorbar(x=np.arange(1, 301, 1), y=val_result, yerr=algorithm_val_results[algo_name][1],
+                         fmt='^-', errorevery=10, label=label_mapping[algo_name]+', ours')
             if not os.path.exists('plots/src_data'):
                 os.makedirs('plots/src_data')
             np.save(
