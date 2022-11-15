@@ -484,13 +484,13 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd',
-                 is_debug=True
+                 is_debug=False
                  ):
         self._is_updated_distances = False
         self._distances = None
         self.coreset_indexes = None
         self.old_nasbench = None
-        self.points = None
+        self._points = None
         super().__init__(dataset, data_folder, version, is_debug=is_debug)
 
         print(f'\t\t\t\nis debug  =  {is_debug}')
@@ -624,7 +624,7 @@ class KNasbench201(Nasbench201):
 
             self.dim = min(self.dim, M.shape[0])
             ind = np.argpartition(np.abs(w), -self.dim)[-self.dim:]
-            self.points = X.T[ind].T
+            self._points = X.T[ind].T
 
         elif self.points_alg == 'icba':
             if self.dim > 2:
@@ -677,13 +677,13 @@ class KNasbench201(Nasbench201):
                     points.append(cp.expand_dims(intersections[cp.argmin(intersections_losses)], 0))
                     print(f'ICBA iteration={m}, distance={cp.min(intersections_losses)}, time={time.time() -start_i}')
 
-            self.points = np.concatenate(points).get()
+            self._points = np.concatenate(points).get()
 
         else:
             raise NotImplementedError('Invalid points computation algorithm')
 
         print(f'Points computed. time: {time.time() - start}')
-        return self.points
+        return self._points
 
     def get_best_arch_loss(self):
         best_loss = 100
