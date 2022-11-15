@@ -159,6 +159,16 @@ def run_experiments(args, save_dir):
         ax2.set_ylabel('Best validation accuracy')
         ax1.set_prop_cycle(custom_cycler)
         ax2.set_prop_cycle(custom_cycler)
+        def inverse(x):
+            return x ** (1 / 2)
+        def forward(x):
+            return x ** 2
+        ax1.set_yscale('function', functions=(forward, inverse))
+        ax2.set_yscale('function', functions=(forward, inverse))
+        if not os.path.exists('plots'):
+            os.makedirs('plots')
+        if not os.path.exists('plots/src_data'):
+            os.makedirs('plots/src_data')
         for algo_name in algorithm_results.keys():
             sota_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}.npy')
             sota_val_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_val.npy')
@@ -166,18 +176,18 @@ def run_experiments(args, save_dir):
             val_result = 100 - algorithm_val_results[algo_name][0]
             ax1.plot(np.arange(10, 301, 10), sota_result, '--', label=label_mapping[algo_name]+', SOTA')
             ax1.errorbar(x=np.arange(1, 301, 1), y=result, yerr=algorithm_results[algo_name][1],
-                         fmt='^-', errorevery=10, label=label_mapping[algo_name]+', ours')
+                         fmt='-', errorevery=10, label=label_mapping[algo_name]+', ours')
             ax2.plot(np.arange(10, 301, 10), sota_val_result, '--', label=label_mapping[algo_name]+', SOTA')
             ax2.errorbar(x=np.arange(1, 301, 1), y=val_result, yerr=algorithm_val_results[algo_name][1],
-                         fmt='^-', errorevery=10, label=label_mapping[algo_name]+', ours')
-            if not os.path.exists('plots/src_data'):
-                os.makedirs('plots/src_data')
+                         fmt='-', errorevery=10, label=label_mapping[algo_name]+', ours')
             np.save(
                 'plots/src_data/{}_{}_{}_{}_val'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 val_result)
             np.save(
                 'plots/src_data/{}_{}_{}_{}'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 result)
+        ax1.legend()
+        ax2.legend()
         plt.savefig('plots/{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method))
 
 
