@@ -413,7 +413,6 @@ class Nasbench101(Nasbench):
 
 
 class Nasbench201(Nasbench):
-    nasbench = None
 
     def __init__(self,
                  dataset='cifar10',
@@ -426,17 +425,13 @@ class Nasbench201(Nasbench):
         
         if not isinstance(self, KNasbench201):
             print(f'\t\t\t\nis debug  =  {is_debug}')
-
-            if not Nasbench201.nasbench is None:
-                del Nasbench201.nasbench
-            Nasbench201.nasbench = None
         
             if is_debug:
-                Nasbench201.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+                self.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
             elif version == '1_0':
-                Nasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+                self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
             elif version == '1_1':
-                Nasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
+                self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
 
     def __len__(self):
         return len(self.nasbench)
@@ -472,19 +467,12 @@ class Nasbench201(Nasbench):
         data = []
         # if len(data) == 0:
         #     print('1')
-        for arch in KNasbench201.nasbench.meta_archs:
+        for arch in self.nasbench.meta_archs:
             data.append(self.query_arch(arch))
         return data
 
 
 class KNasbench201(Nasbench201):
-    _is_updated_distances = False
-    _distances = None
-    _coreset_indexes = None
-    old_nasbench = None
-    _points = None
-
-    # mutation_tree = None
 
     def __init__(self,
                  dataset='cifar10',
@@ -496,35 +484,27 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd',
-                 is_debug=False
+                 is_debug=True
                  ):
-        KNasbench201._is_updated_distances = False
-        if not KNasbench201._distances is None:
-             del KNasbench201._distances
-        KNasbench201._distances = None
-        KNasbench201.coreset_indexes = None
-        if not KNasbench201.coreset_indexes is None:
-             del KNasbench201.coreset_indexes
-        KNasbench201.old_nasbench = None
-        if not KNasbench201.old_nasbench is None:
-             del KNasbench201.old_nasbench
-        KNasbench201._points = None
-        if not KNasbench201._points is None:
-             del KNasbench201._points
+        self._is_updated_distances = False
+        self._distances = None
+        self.coreset_indexes = None
+        self.old_nasbench = None
+        self.points = None
         super().__init__(dataset, data_folder, version, is_debug=is_debug)
 
         print(f'\t\t\t\nis debug  =  {is_debug}')
 
-        if not KNasbench201.nasbench is None:
-            del KNasbench201.nasbench
-        KNasbench201.nasbench = None
+        if not self.nasbench is None:
+            del self.nasbench
+        self.nasbench = None
 
         if is_debug:
-            KNasbench201.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+            self.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
         elif version == '1_0':
-            KNasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
         elif version == '1_1':
-            KNasbench201.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
+            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
         self.sizes_list = []
         self.dim = dim
         self.n_threads = n_threads
@@ -552,21 +532,21 @@ class KNasbench201(Nasbench201):
 
     @property
     def distances(self):
-        if KNasbench201._is_updated_distances:
-            return KNasbench201._distances
+        if self._is_updated_distances:
+            return self._distances
 
         if os.path.isfile(f'distances/{self.dist_type}_dist.npy'):
             print('Using pre-computed distances...')
-            KNasbench201._distances = np.load(f'distances/{self.dist_type}_dist.npy')
-            return KNasbench201._distances
+            self._distances = np.load(f'distances/{self.dist_type}_dist.npy')
+            return self._distances
 
         size = len(self.nasbench)
-        KNasbench201._distances = np.zeros((size, size)).astype(np.float32)
+        self._distances = np.zeros((size, size)).astype(np.float32)
         threads = []
         cells_l = []
         for i in range(len(self.nasbench)):
             cells_l.append(
-                self.get_cell(KNasbench201.nasbench.meta_archs[KNasbench201.nasbench.evaluated_indexes.index(i)],
+                self.get_cell(self.nasbench.meta_archs[self.nasbench.evaluated_indexes.index(i)],
                               init=True))
 
         if self.dist_type == 'real':
@@ -576,9 +556,9 @@ class KNasbench201(Nasbench201):
 
             d_row = np.tile(values, (size, 1))
             d_col = d_row.T
-            KNasbench201._distances = (d_row - d_col) ** 2
+            self._distances = (d_row - d_col) ** 2
         # elif self.dist_type == 'lev':
-        #     KNasbench201._distances = np.load('lev_dist.npy')
+        #     self._distances = np.load('lev_dist.npy')
 
         else:
             def calc_dist(buf, module):
@@ -600,9 +580,9 @@ class KNasbench201(Nasbench201):
                             else:
                                 distances[i, j] = distances[j, i] = cells_l[i].distance(
                                     cells_l[j], self.dist_type, self)
-                            # print(KNasbench201._distances[i, j])
+                            # print(self._distances[i, j])
 
-            shared_buf = to_shared_array(KNasbench201._distances, ctypes.c_float)
+            shared_buf = to_shared_array(self._distances, ctypes.c_float)
             for t_idx in range(self.n_threads):
                 t = mp.Process(target=calc_dist, args=(shared_buf, t_idx,))
                 t.start()
@@ -610,13 +590,13 @@ class KNasbench201(Nasbench201):
             time.sleep(10)
             for t in threads:
                 t.join()
-            KNasbench201._distances = to_numpy_array(shared_buf, (size, size))
+            self._distances = to_numpy_array(shared_buf, (size, size))
 
 
-        KNasbench201._distances /= np.max(np.abs(KNasbench201._distances))
-        np.save('dist.npy', KNasbench201._distances)
-        KNasbench201._is_updated_distances = True
-        return KNasbench201._distances
+        self._distances /= np.max(np.abs(self._distances))
+        np.save('dist.npy', self._distances)
+        self._is_updated_distances = True
+        return self._distances
 
     @property
     def points(self):
@@ -644,7 +624,7 @@ class KNasbench201(Nasbench201):
 
             self.dim = min(self.dim, M.shape[0])
             ind = np.argpartition(np.abs(w), -self.dim)[-self.dim:]
-            KNasbench201._points = X.T[ind].T
+            self.points = X.T[ind].T
 
         elif self.points_alg == 'icba':
             if self.dim > 2:
@@ -697,13 +677,13 @@ class KNasbench201(Nasbench201):
                     points.append(cp.expand_dims(intersections[cp.argmin(intersections_losses)], 0))
                     print(f'ICBA iteration={m}, distance={cp.min(intersections_losses)}, time={time.time() -start_i}')
 
-            KNasbench201._points = np.concatenate(points).get()
+            self.points = np.concatenate(points).get()
 
         else:
             raise NotImplementedError('Invalid points computation algorithm')
 
         print(f'Points computed. time: {time.time() - start}')
-        return KNasbench201._points
+        return self.points
 
     def get_best_arch_loss(self):
         best_loss = 100
@@ -721,18 +701,18 @@ class KNasbench201(Nasbench201):
         return 'knasbench_201'
 
     def copy_bench(self):
-        KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
+        self.old_nasbench = copy.deepcopy(self.nasbench)
 
     def remove_by_indices(self, indices):
         # print(f'Indexes to remove:{indices}')
         for idx in indices:
-            # a_idx = KNasbench201.nasbench.evaluated_indexes.index(idx)
-            arch_str = KNasbench201.nasbench.arch2infos_full[idx].arch_str
-            del KNasbench201.nasbench.arch2infos_full[idx]
-            del KNasbench201.nasbench.arch2infos_less[idx]
-            del KNasbench201.nasbench.archstr2index[arch_str]
-            KNasbench201.nasbench.evaluated_indexes.remove(idx)
-            KNasbench201.nasbench.meta_archs.remove(arch_str)
+            # a_idx = self.nasbench.evaluated_indexes.index(idx)
+            arch_str = self.nasbench.arch2infos_full[idx].arch_str
+            del self.nasbench.arch2infos_full[idx]
+            del self.nasbench.arch2infos_less[idx]
+            del self.nasbench.archstr2index[arch_str]
+            self.nasbench.evaluated_indexes.remove(idx)
+            self.nasbench.meta_archs.remove(arch_str)
 
     def parallel_remove(self, remove_indices):
         threads = []
@@ -759,19 +739,19 @@ class KNasbench201(Nasbench201):
         # TODO: debug deepcopy paralelizing
         # copy_thread = Process(target=KNasbench201.copy_bench)
         # copy_thread.start()
-        KNasbench201.old_nasbench = copy.deepcopy(KNasbench201.nasbench)
+        self.old_nasbench = copy.deepcopy(self.nasbench)
         print(f'Compression: {self.compression_method}')
 
         if self.compression_method == 'uniform':
-            self.coreset_indexes = np.random.choice(len(KNasbench201.nasbench.evaluated_indexes),k)
-            points2coreset_dist_mat = self.distances[KNasbench201.nasbench.evaluated_indexes][
-                                      :, KNasbench201.nasbench.evaluated_indexes][
+            self.coreset_indexes = np.random.choice(len(self.nasbench.evaluated_indexes),k)
+            points2coreset_dist_mat = self.distances[self.nasbench.evaluated_indexes][
+                                      :, self.nasbench.evaluated_indexes][
                                       :, self.coreset_indexes]
             self.labels = np.argmin(points2coreset_dist_mat, axis=1)
 
         elif self.compression_method == 'k_medoids':
             kmedoids = KMedoids(n_clusters=k, metric='precomputed').fit(  # Take distances from current cluster
-                self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes])
+                self.distances[self.nasbench.evaluated_indexes][:, self.nasbench.evaluated_indexes])
             self.labels = kmedoids.labels_
             self.coreset_indexes = kmedoids.medoid_indices_
 
@@ -784,22 +764,22 @@ class KNasbench201(Nasbench201):
         elif self.compression_method == 'k_means_coreset_orig_dist':
             self.compression_kwargs['k'] = self.k_for_coreset[iteration]
             self.coreset_indexes, self.labels = knas_coreset(
-                self.points, self.distances[KNasbench201.nasbench.evaluated_indexes][:, KNasbench201.nasbench.evaluated_indexes],
+                self.points, self.distances[self.nasbench.evaluated_indexes][:, self.nasbench.evaluated_indexes],
                 **self.compression_kwargs)
             k = self.coreset_indexes.shape[0]
         else:
             raise NotImplementedError('Invalid compression type')
         # self.parallel_remove(remove_indices)
-        # self.mutation_tree = MutationTree(KNasbench201.nasbench.meta_archs)
+        # self.mutation_tree = MutationTree(self.nasbench.meta_archs)
 
         self.cluster_sizes = np.bincount(self.labels)
         # copy_thread.join()
-        remove_indices = list(set(KNasbench201.nasbench.evaluated_indexes) -
-                              set(np.array(KNasbench201.nasbench.evaluated_indexes)[
+        remove_indices = list(set(self.nasbench.evaluated_indexes) -
+                              set(np.array(self.nasbench.evaluated_indexes)[
                                       self.coreset_indexes]))
         self.remove_by_indices(remove_indices)
         print(f'\nSpace updated to centers.\ntime: {time.time() - start}\nsize:{len(self.nasbench)}\n')
-        self.ratio = k / len(KNasbench201.nasbench)
+        self.ratio = k / len(self.nasbench)
         self.sizes_list.append(self.coreset_indexes.size)
         return k
 
@@ -807,22 +787,22 @@ class KNasbench201(Nasbench201):
         if isinstance(arch, dict):
             # _labels indexes are incorrext
             return self.labels[
-                KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch['string']])]
-        return self.labels[KNasbench201.nasbench.evaluated_indexes.index(KNasbench201.nasbench.archstr2index[arch])]
+                self.nasbench.evaluated_indexes.index(self.nasbench.archstr2index[arch['string']])]
+        return self.labels[self.nasbench.evaluated_indexes.index(self.nasbench.archstr2index[arch])]
 
     def choose_clusters(self, data, m):
         start = time.time()
         # When m is 0, choose it automatically to save query-data ratio
         best_dicts = sorted(data, key=lambda x: x['val_loss'])
-        KNasbench201.nasbench = KNasbench201.old_nasbench
+        self.nasbench = self.old_nasbench
         # Remove duplicates
         best_dicts = list({best_dict['spec']['string']:best_dict for best_dict in best_dicts}.values())
         best_dicts = best_dicts[:m]
-        remove_indices = set(KNasbench201.nasbench.evaluated_indexes)
+        remove_indices = set(self.nasbench.evaluated_indexes)
         for best_dict in best_dicts:
             cluster_idx = self.cluster_by_arch(best_dict['spec'])
             cluster_elements_indexes_list = np.where(self.labels == cluster_idx)[0]  # Indexes in list only!
-            real_indexes = np.array(KNasbench201.nasbench.evaluated_indexes)[cluster_elements_indexes_list]
+            real_indexes = np.array(self.nasbench.evaluated_indexes)[cluster_elements_indexes_list]
             remove_indices = remove_indices - set(real_indexes)
         remove_indices = list(remove_indices)
         self.remove_by_indices(remove_indices)
