@@ -107,6 +107,7 @@ def run_experiments(args, save_dir):
 
         for proc in jobs:
             proc.join()
+            time.sleep(2)
 
         for j in range(num_algos):
 
@@ -166,11 +167,13 @@ def run_experiments(args, save_dir):
             ax1.errorbar(x=np.arange(1, 301, 1), y=result, yerr=algorithm_results[algo_name][1], fmt='^-')
             ax1.plot(np.arange(10, 301, 10), sota_val_result, '--')
             ax1.errorbar(x=np.arange(1, 301, 1), y=val_result, yerr=algorithm_val_results[algo_name][1], fmt='^-')
+            if not os.path.exists('plots/src_data'):
+                os.makedirs('plots/src_data')
             np.save(
-                'plots/src_data/{}_{}_{}_{}_val.png'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                'plots/src_data/{}_{}_{}_{}_val'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 val_result)
             np.save(
-                'plots/src_data/{}_{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                'plots/src_data/{}_{}_{}_{}'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 result)
         plt.savefig('plots/{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method))
 
