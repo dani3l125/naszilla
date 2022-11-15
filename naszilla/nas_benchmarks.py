@@ -422,16 +422,15 @@ class Nasbench201(Nasbench):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
-        
-        if not isinstance(self, KNasbench201):
-            print(f'\t\t\t\nis debug  =  {is_debug}')
-        
-            if is_debug:
-                self.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
-            elif version == '1_0':
-                self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
-            elif version == '1_1':
-                self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
+
+        print(f'\t\t\t\nis debug  =  {is_debug}')
+
+        if is_debug:
+            self.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+        elif version == '1_0':
+            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+        elif version == '1_1':
+            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
 
     def __len__(self):
         return len(self.nasbench)
@@ -486,25 +485,21 @@ class KNasbench201(Nasbench201):
                  points_alg='evd',
                  is_debug=False
                  ):
+        super().__init__(dataset, data_folder, version, is_debug=is_debug)
         self._is_updated_distances = False
         self._distances = None
         self.coreset_indexes = None
         self.old_nasbench = None
         self._points = None
-        super().__init__(dataset, data_folder, version, is_debug=is_debug)
 
         print(f'\t\t\t\nis debug  =  {is_debug}')
 
-        if not self.nasbench is None:
-            del self.nasbench
-        self.nasbench = None
-
-        if is_debug:
-            self.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
-        elif version == '1_0':
-            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
-        elif version == '1_1':
-            self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
+        # if is_debug:
+        #     self.nasbench = load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+        # elif version == '1_0':
+        #     self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+        # elif version == '1_1':
+        #     self.nasbench = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_1-096897.pth'))
         self.sizes_list = []
         self.dim = dim
         self.n_threads = n_threads
