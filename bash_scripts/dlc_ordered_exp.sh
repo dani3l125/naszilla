@@ -1,10 +1,10 @@
 #!/bin/bash
 
-TRIALS=1
+TRIALS=5
 
 let NTHREADS=$TRIALS*4+1
 
-for i in 1 2 3 4 5
+for i in 6 7 8 9 10
 do
   screen -L -Logfile cifar10_exp$i -S cifar10_exp$i -dm srun --gpus=1 --mincpus=$NTHREADS\
    --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
