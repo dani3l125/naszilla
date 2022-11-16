@@ -160,9 +160,9 @@ def run_experiments(args, save_dir):
         ax1.set_prop_cycle(custom_cycler)
         ax2.set_prop_cycle(custom_cycler)
         def inverse(x):
-            return x ** (1 / 2)
+            return 2 ** (x - x.min)
         def forward(x):
-            return x ** 2
+            return 1 / (2 ** (x - x.min))
         ax1.set_yscale('function', functions=(forward, inverse))
         ax2.set_yscale('function', functions=(forward, inverse))
         if not os.path.exists('plots'):
