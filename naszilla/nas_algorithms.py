@@ -25,12 +25,13 @@ DEFAULT_TOTAL_QUERIES = 150
 DEFAULT_LOSS = 'val_loss'
 SIG_DONE = True
 
+
 def signal_handler(signum, frame):
     if not SIG_DONE:
         raise Exception("Timed out!")
 
 
-def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
+def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg, control=True):
     # run nas algorithm
     ps = copy.deepcopy(algo_params)
     algo_name = ps.pop('algo_name')
@@ -39,7 +40,7 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
     if k_alg:
         if cfg is None:
             raise Exception('No configuration file')
-        data = knas(algo_params, search_space, mp, cfg)
+        data, trial_stats = knas(algo_params, search_space, mp, cfg, control)
     elif algo_name == 'random':
         data = random_search(search_space, **ps)
     elif algo_name == 'evolution':
@@ -73,8 +74,8 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg):
     if 'loss' not in ps:
         ps['loss'] = DEFAULT_LOSS
 
-    result, val_result = compute_best_test_losses(data, 1, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg\
-            else compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], 0, DEFAULT_LOSS)
+    result, val_result = compute_best_test_losses(data, 1, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg \
+        else compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], 0, DEFAULT_LOSS)
     return result, val_result, data, cluster_sizes_list
 
 
@@ -102,8 +103,9 @@ def schedule_geometric_by_sum(ratio, s, n):
     first = (s * (1 - ratio)) / (1 - r_n)
     return np.round(np.geomspace(first, first * r_n / ratio, n))[::-1].astype(int)
 
+
 class PermutationsController:
-    def __init__(self, search_space: naszilla.nas_benchmarks.KNasbench201, alpha_size=30):
+    def __init__(self, search_space: naszilla.nas_benchmarks.KNasbench201=None, alpha_size=100):
         self.search_space = search_space
         self.acc_values = np.load('acc_values.npy')
         if search_space.dataset == 'cifar10':
@@ -116,46 +118,53 @@ class PermutationsController:
         self.dataset = search_space.dataset if search_space.dataset != 'cifar10' else 'cifar10-valid'
 
         self.alpha_size = alpha_size
-        self.trials = []
-        self.current_trial = []
-    def InsertIteration(self):
+        self.trial = []
+
+    def set_search_space(self, search_space):
+        self.search_space = search_space
+
+    def I(self, digits, base):
+        return np.sum(digits[::-1] * (base ** np.arange(digits.size)))
+
+    def insert_iteration(self):
         if len(self.search_space) < 10 * self.alpha_size:
             return
 
+        evaluated_indexes_array = np.array(self.search_space.old_nasbench.evaluated_indexes)
+        clusters_num = self.search_space.labels.max()
+
         # Labels to best cluster mapping:
         clusters_best_values = -1 * np.ones((self.search_space.labels.max(),))
-        for label in range(self.search_space.labels.max()):
-            clusters_best_values[label] = self.acc_values[np.array(self.search_space.old_nasbench.evaluated_indexes)
+        for label in range(clusters_num):
+            clusters_best_values[label] = self.acc_values[evaluated_indexes_array
             [np.argwhere(self.search_space.labels == label)]].max()
-        mapping = np.argsort(clusters_best_values)
+        mapping = np.argsort(clusters_best_values)[::-1]
 
         # Labels of best archs in space:
-        best_archs_labels = None
+        best_archs_labels = self.search_space.labels[np.argsort(self.acc_values[evaluated_indexes_array])[::-1]][
+                            :self.alpha_size]
+        # I_A, I_R computation:
+        I_A = self.I(mapping[best_archs_labels], clusters_num)
+        I_R = self.I(
+            mapping[np.argsort(self.acc_values[evaluated_indexes_array[self.search_space.coreset_indexes]])[::-1]],
+            clusters_num)
+
+        d = (I_A - I_R) / I_A
+
+        # Update statistics:
+        self.trial.append(d)
 
 
+def knas(algo_params, search_space, mp, cfg, control):
+    if control:
+        controller = PermutationsController(search_space)
 
-        best_archs_indices = self.acc_values[np.array(self.search_space.old_nasbench.evaluated_indexes)][:self.alpha_size]
-        best_archs_labels = self.search_space.labels[best_archs_indices]
-        oredred_representatives_indexes = self.search_space.coreset_indexes[best_archs_labels]
-        oredred_representatives_labels = self.search_space.labels[oredred_representatives_indexes]
-
-        best_arch_by_label_indexes = None # TODO
-        # Sanity check
-        if oredred_representatives_labels == best_archs_labels:
-            print("\n||| Permutation controller: sanity check success")
-        else:
-            print("\n||| Permutation controller: sanity check failure")
-        oredred_representatives_acc_values = self.acc_values[oredred_representatives_indexes]
-        oredred_representatives_labels = oredred_representatives_labels[np.argsort(oredred_representatives_acc_values)]
-
-
-def knas(algo_params, search_space, mp, cfg):
     # run nas algorithm
 
     n_iterations = cfg['iterations']
     total_q = algo_params['total_queries']
     q_sum = 0
-    q_list = (total_q * softmax((1 / n_iterations) * np.arange(n_iterations, 0 , -1))).astype(int)
+    q_list = (total_q * softmax((1 / n_iterations) * np.arange(n_iterations, 0, -1))).astype(int)
     space_size = len(search_space)
 
     ps = copy.deepcopy(algo_params)
@@ -189,13 +198,14 @@ def knas(algo_params, search_space, mp, cfg):
         if k != -1:
             # -1 means searching in the final cluster as usual
             k = search_space.prune(i, k)
+            if control:
+                controller.insert_iteration()
             # q = k * total_q / 15624 if k > 50 else min(50, total_q - q_sum)
             # q = total_q // n_iterations
             # q /= 10
             # q = int(np.ceil(q)*10)
             q = q_list[i]
             m = q // cfg['m_c']
-
 
         ps['total_queries'] = q
         print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
@@ -244,7 +254,7 @@ def knas(algo_params, search_space, mp, cfg):
             return final_data
         space_size = len(search_space)
 
-    return final_data
+    return final_data, controller.trial
 
 
 def compute_best_test_losses(data, k, total_queries, start_query, loss):
@@ -266,7 +276,6 @@ def compute_best_test_losses(data, k, total_queries, start_query, loss):
         val_results.append((query, val_error))
 
     return results, val_results
-
 
 
 def random_search(search_space,
@@ -529,8 +538,8 @@ def local_search(search_space,
             #     return data
 
             arch_dict = search_space.query_arch(random_encoding=random_encoding,
-                                                    deterministic=deterministic,
-                                                    epochs=epochs)
+                                                deterministic=deterministic,
+                                                epochs=epochs)
 
             if search_space.get_hash(arch_dict['spec']) not in query_dict:
                 query_dict[search_space.get_hash(arch_dict['spec'])] = 1
@@ -546,9 +555,9 @@ def local_search(search_space,
         while True:
             # loop over iterations of local search until we hit a local minimum
             iter_dict[search_space.get_hash(arch_dict['spec'])] = 1
-            nbhd = search_space.get_nbhd(arch_dict['spec'], mutate_encoding=mutate_encoding)\
-                   if not is_knas else search_space.get_nbhd(arch_dict['spec'], mutate_encoding=mutate_encoding,
-                                                             arch_list=search_space.nasbench.meta_archs)
+            nbhd = search_space.get_nbhd(arch_dict['spec'], mutate_encoding=mutate_encoding) \
+                if not is_knas else search_space.get_nbhd(arch_dict['spec'], mutate_encoding=mutate_encoding,
+                                                          arch_list=search_space.nasbench.meta_archs)
             improvement = False
             nbhd_dicts = []
             for nbr in nbhd:
@@ -798,7 +807,6 @@ def pybnn_search(search_space,
         query += k
 
     return data
-
 
 # TODO list:
 # 1. experiments beautiful graphs: triangles on line for mine, same color dotted for competitor.
