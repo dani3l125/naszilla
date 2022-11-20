@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TRIALS=1
+TRIALS=3
 
 let NTHREADS=$TRIALS*4+1
 
