@@ -253,11 +253,17 @@ def knas(algo_params, search_space, mp, cfg, control):
 
         if k != -1:  # efficiency
             search_space.choose_clusters(data, int(m))
+        elif control:
+            return final_data, controller.trial
         else:
-            return final_data
+            return final_data, []
         space_size = len(search_space)
 
-    return final_data, controller.trial
+    if control:
+        return final_data, controller.trial
+
+    else:
+        return final_data, []
 
 
 def compute_best_test_losses(data, k, total_queries, start_query, loss):
