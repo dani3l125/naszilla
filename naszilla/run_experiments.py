@@ -175,12 +175,12 @@ def run_experiments(args, save_dir):
             result = 100 - algorithm_results[algo_name][0]
             val_result = 100 - algorithm_val_results[algo_name][0]
             ax1.plot(np.arange(10, 301, 10), sota_result, 'o-', label=label_mapping[algo_name]+', SOTA')
-            ax1.plot(np.arange(10, 301, 10), result[10::10], '^-', label=label_mapping[algo_name] + ', ours')
-            ax1.errorbar(x=np.arange(1, 301, 1)[10:], y=result[10:], yerr=algorithm_results[algo_name][1][10:],
+            ax1.plot(np.arange(10, 301, 10), result[9::10], '^-', label=label_mapping[algo_name] + ', ours')
+            ax1.errorbar(x=np.arange(1, 301, 1)[9:], y=result[9:], yerr=algorithm_results[algo_name][1][9:],
                          fmt='-', errorevery=10)
-            ax2.plot(np.arange(10, 301, 10), sota_val_result[10:], 'o-', label=label_mapping[algo_name]+', SOTA')
-            ax2.plot(np.arange(10, 301, 10), val_result[10::10], '^-', label=label_mapping[algo_name]+', ours')
-            ax2.errorbar(x=np.arange(1, 301, 1)[10:], y=val_result[10:], yerr=algorithm_val_results[algo_name][1][10:],
+            ax2.plot(np.arange(10, 301, 10), sota_val_result[9:], 'o-', label=label_mapping[algo_name]+', SOTA')
+            ax2.plot(np.arange(10, 301, 10), val_result[9::10], '^-', label=label_mapping[algo_name]+', ours')
+            ax2.errorbar(x=np.arange(1, 301, 1)[9:], y=val_result[9:], yerr=algorithm_val_results[algo_name][1][9:],
                          fmt='-', errorevery=10)
             np.save(
                 'plots/src_data/{}_{}_{}_{}_val'.format(cfg['figName'], args.dataset, compression_method, algo_name),

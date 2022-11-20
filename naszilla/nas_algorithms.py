@@ -126,6 +126,8 @@ class PermutationsController:
         best_archs_labels = self.search_space.labels[best_archs_indices]
         oredred_representatives_indexes = self.search_space.coreset_indexes[best_archs_labels]
         oredred_representatives_labels = self.search_space.labels[oredred_representatives_indexes]
+
+        best_arch_by_label_indexes = None # TODO
         # Sanity check
         if oredred_representatives_labels == best_archs_labels:
             print("\n||| Permutation controller: sanity check success")
