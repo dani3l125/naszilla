@@ -11,7 +11,7 @@ do
    /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
   cd /dyakovlev/naszilla; printf \"\n\n\n####################\n Experiment $i\n####################\n\n\n\"
   python /dyakovlev/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \\
-  --algo_params local_search --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
+  --algo_params all_algos --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
     --dataset cifar10"
 
   screen -L -Logfile cifar100_exp$i -S cifar100_exp$i -dm srun --gpus=1 --mincpus=$NTHREADS\
@@ -19,7 +19,7 @@ do
    /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
   cd /dyakovlev/naszilla; printf \"\n\n\n####################\n Experiment $i\n####################\n\n\n\"
   python /dyakovlev/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \\
-  --algo_params local_search --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
+  --algo_params all_algos --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
     --dataset cifar100"
 
   screen -L -Logfile imagenet_exp$i -S imagenet_exp$i -dm srun --gpus=1 --mincpus=$NTHREADS\
@@ -27,7 +27,7 @@ do
    /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
   cd /dyakovlev/naszilla; printf \"\n\n\n####################\n Experiment $i\n####################\n\n\n\"
   python /dyakovlev/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \\
-  --algo_params local_search --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
+  --algo_params all_algos --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
     --dataset ImageNet16-120"
 
 #  python /dyakovlev/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \

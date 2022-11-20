@@ -121,8 +121,20 @@ class PermutationsController:
     def InsertIteration(self):
         if len(self.search_space) < 10 * self.alpha_size:
             return
-        # Indices of best archs in space:
-        best_archs_indices = self.acc_values[np.array(self.search_space.old_nasbench.evaluated_indexes)]
+
+        # Labels to best cluster mapping:
+        clusters_best_values = -1 * np.ones((self.search_space.labels.max(),))
+        for label in range(self.search_space.labels.max()):
+            clusters_best_values[label] = self.acc_values[np.array(self.search_space.old_nasbench.evaluated_indexes)
+            [np.argwhere(self.search_space.labels == label)]].max()
+        mapping = np.argsort(clusters_best_values)
+
+        # Labels of best archs in space:
+        best_archs_labels = None
+
+
+
+        best_archs_indices = self.acc_values[np.array(self.search_space.old_nasbench.evaluated_indexes)][:self.alpha_size]
         best_archs_labels = self.search_space.labels[best_archs_indices]
         oredred_representatives_indexes = self.search_space.coreset_indexes[best_archs_labels]
         oredred_representatives_labels = self.search_space.labels[oredred_representatives_indexes]
