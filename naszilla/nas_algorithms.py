@@ -503,18 +503,22 @@ def local_search(search_space,
 
         arch_dicts = []
         while len(arch_dicts) < num_init:
-            try:
-                SIG_DONE = False
-                signal.signal(signal.SIGALRM, signal_handler)
-                signal.alarm(300)  # 300 seconds
-                arch_dict = search_space.query_arch(random_encoding=random_encoding,
+            # try:
+            #     SIG_DONE = False
+            #     signal.signal(signal.SIGALRM, signal_handler)
+            #     signal.alarm(300)  # 300 seconds
+            #     arch_dict = search_space.query_arch(random_encoding=random_encoding,
+            #                                         deterministic=deterministic,
+            #                                         epochs=epochs)
+            #     SIG_DONE = True
+            #
+            # except:
+            #     print("Timed out!")
+            #     return data
+
+            arch_dict = search_space.query_arch(random_encoding=random_encoding,
                                                     deterministic=deterministic,
                                                     epochs=epochs)
-                SIG_DONE = True
-
-            except:
-                print("Timed out!")
-                return data
 
             if search_space.get_hash(arch_dict['spec']) not in query_dict:
                 query_dict[search_space.get_hash(arch_dict['spec'])] = 1
