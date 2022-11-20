@@ -37,6 +37,8 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg, control=True):
     algo_name = ps.pop('algo_name')
     cluster_sizes_list = []
 
+    trial_stats = None
+
     if k_alg:
         if cfg is None:
             raise Exception('No configuration file')
@@ -76,7 +78,9 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg, control=True):
 
     result, val_result = compute_best_test_losses(data, 1, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg \
         else compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], 0, DEFAULT_LOSS)
-    return result, val_result, data, cluster_sizes_list
+    return result, val_result,\
+           data, cluster_sizes_list, trial_stats if not trial_stats is None\
+               else result, val_result, data, cluster_sizes_list
 
 
 def schedule_linear(first, last, n):
@@ -105,7 +109,7 @@ def schedule_geometric_by_sum(ratio, s, n):
 
 
 class PermutationsController:
-    def __init__(self, search_space: naszilla.nas_benchmarks.KNasbench201=None, alpha_size=100):
+    def __init__(self, search_space: naszilla.nas_benchmarks.KNasbench201 = None, alpha_size=100):
         self.search_space = search_space
         self.acc_values = np.load('acc_values.npy')
         if search_space.dataset == 'cifar10':
@@ -246,7 +250,6 @@ def knas(algo_params, search_space, mp, cfg, control):
         result, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], q_sum, DEFAULT_LOSS)
         print(f'\n Result: {val_result} Optimal: {search_space.get_best_arch_loss()}\n#####')
         q_sum += q
-
 
         if k != -1:  # efficiency
             search_space.choose_clusters(data, int(m))
