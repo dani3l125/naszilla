@@ -38,18 +38,18 @@ def plot_experiments(args):
         for algo_name in label_mapping.keys():
             sota_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}.npy')
             sota_val_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_val.npy')
-            if not os.path.exists('plots/src_data/{}_{}_{}_{}'.format(cfg['figName'], args.dataset, compression_method, algo_name)):
+            if not os.path.exists('plots/src_data/{}_{}_{}_{}.npy'.format(cfg['figName'], args.dataset, compression_method, algo_name)):
                 break
             result = np.load(
-                'plots/src_data/{}_{}_{}_{}'.format(cfg['figName'], args.dataset, compression_method, algo_name))
+                'plots/src_data/{}_{}_{}_{}.npy'.format(cfg['figName'], args.dataset, compression_method, algo_name))
             val_result = np.load(
-                'plots/src_data/{}_{}_{}_{}_val'.format(cfg['figName'], args.dataset, compression_method, algo_name))
+                'plots/src_data/{}_{}_{}_{}_val.npy'.format(cfg['figName'], args.dataset, compression_method, algo_name))
             ax1.plot(np.arange(10, 301, 10), sota_result, '--', label=label_mapping[algo_name]+', SOTA')
-            ax1.plot(np.arange(10, 301, 50), result[9::10], '^-', label=label_mapping[algo_name] + ', ours')
-            ax1.plot(x=np.arange(1, 301, 1), y=result, fmt='-')
+            ax1.plot(np.arange(10, 301, 50), result[9::50], '^', label=label_mapping[algo_name] + ', ours')
+            ax1.plot(np.arange(1, 301, 1), result, '-')
             ax2.plot(np.arange(10, 301, 10), sota_val_result, '--', label=label_mapping[algo_name]+', SOTA')
-            ax2.plot(np.arange(10, 301, 50), val_result[9::10], '^-', label=label_mapping[algo_name]+', ours')
-            ax2.errorbar(x=np.arange(1, 301, 1), y=val_result, fmt='-')
+            ax2.plot(np.arange(10, 301, 50), val_result[9::50], '^', label=label_mapping[algo_name]+', ours')
+            ax2.plot(np.arange(1, 301, 1), val_result, '-')
 
         ax1.legend()
         ax2.legend()
