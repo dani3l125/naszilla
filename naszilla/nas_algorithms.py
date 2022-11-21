@@ -78,9 +78,7 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg, control=True):
 
     result, val_result = compute_best_test_losses(data, 1, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg \
         else compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], 0, DEFAULT_LOSS)
-    return result, val_result,\
-           data, cluster_sizes_list, trial_stats if not trial_stats is None\
-               else result, val_result, data, cluster_sizes_list
+    return result, val_result, data, cluster_sizes_list, trial_stats
 
 
 def schedule_linear(first, last, n):
