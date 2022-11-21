@@ -141,10 +141,12 @@ class PermutationsController:
 
             clusters_best_values[label] = self.acc_values[evaluated_indexes_array
             [np.argwhere(self.search_space.labels == label)]].max()
-        mapping = np.argsort(clusters_best_values)[::-1]
+        increasing_ordered_labels = np.argsort(clusters_best_values)
+        mapping = np.zeros((clusters_num, ))
+        np.put(mapping, increasing_ordered_labels, np.arange(clusters_num))
 
         # Labels of best archs in space:
-        best_archs_labels = self.search_space.labels[np.argsort(self.acc_values[evaluated_indexes_array])[::-1]][
+        best_archs_labels = self.search_space.labels[np.argsort([evaluated_indexes_array])[::-1]][
                             :self.alpha_size]
         # I_A, I_R computation:
         I_A = self.I(mapping[best_archs_labels], clusters_num)
