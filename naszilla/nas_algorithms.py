@@ -155,6 +155,7 @@ class PermutationsController:
 
         # Update statistics:
         self.trial.append(d)
+        print(self.trial)
 
 
 def knas(algo_params, search_space, mp, cfg, control):
