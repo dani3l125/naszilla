@@ -136,8 +136,9 @@ class PermutationsController:
         clusters_num = self.search_space.labels.max() + 1
 
         # Labels to best cluster mapping:
-        clusters_best_values = -1 * np.ones((self.search_space.labels.max(),))
+        clusters_best_values = -1 * np.ones((clusters_num,))
         for label in range(clusters_num):
+
             clusters_best_values[label] = self.acc_values[evaluated_indexes_array
             [np.argwhere(self.search_space.labels == label)]].max()
         mapping = np.argsort(clusters_best_values)[::-1]
