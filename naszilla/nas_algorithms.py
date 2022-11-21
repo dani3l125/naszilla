@@ -107,7 +107,7 @@ def schedule_geometric_by_sum(ratio, s, n):
 
 
 class PermutationsController:
-    def __init__(self, search_space: naszilla.nas_benchmarks.KNasbench201 = None, alpha_size=100):
+    def __init__(self, search_space: naszilla.nas_benchmarks.KNasbench201 = None, alpha_size=1):
         self.search_space = search_space
         self.acc_values = np.load('acc_values.npy')
         if search_space.dataset == 'cifar10':
@@ -133,7 +133,7 @@ class PermutationsController:
             return
 
         evaluated_indexes_array = np.array(self.search_space.old_nasbench.evaluated_indexes)
-        clusters_num = self.search_space.labels.max()
+        clusters_num = self.search_space.labels.max() + 1
 
         # Labels to best cluster mapping:
         clusters_best_values = -1 * np.ones((self.search_space.labels.max(),))
