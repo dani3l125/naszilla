@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 label_mapping = {'bananas':'BANANAS', 'local_search':'Local search', 'evolution':'Evolutionary search', 'random': 'Random search'}
 
-def plot_experiments(args, save_dir):
+def plot_experiments(args):
     # read configuration
     cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
 
