@@ -774,6 +774,7 @@ class KNasbench201(Nasbench201):
         # self.mutation_tree = MutationTree(self.nasbench.meta_archs)
 
         self.cluster_sizes = np.bincount(self.labels)
+        print(f'Minimal number of points in cluster: {np.amin(self.cluster_sizes)}')
         # copy_thread.join()
         remove_indices = list(set(self.nasbench.evaluated_indexes) -
                               set(np.array(self.nasbench.evaluated_indexes)[
