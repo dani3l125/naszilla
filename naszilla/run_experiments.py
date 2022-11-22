@@ -38,8 +38,8 @@ def run_experiments(args, save_dir):
     # read configuration
     cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
 
-    for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
-
+    # for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
+    for compression_method in ['k_means_coreset_orig_dist']:
         # manager = multiprocessing.Manager()
         algorithm_results = {}
         algorithm_val_results = {}

@@ -107,7 +107,7 @@ def schedule_geometric_by_sum(ratio, s, n):
 
 
 class PermutationsController:
-    def __init__(self, search_space: naszilla.nas_benchmarks.KNasbench201 = None, alpha_size=1):
+    def __init__(self, search_space: naszilla.nas_benchmarks.KNasbench201 = None, alpha_size=4):
         self.search_space = search_space
         self.acc_values = np.load('acc_values.npy')
         if search_space.dataset == 'cifar10':
@@ -204,8 +204,8 @@ def knas(algo_params, search_space, mp, cfg, control):
         if k != -1:
             # -1 means searching in the final cluster as usual
             k = search_space.prune(i, k)
-            if control:
-                controller.insert_iteration()
+            # if control:
+            #     controller.insert_iteration()
             # q = k * total_q / 15624 if k > 50 else min(50, total_q - q_sum)
             # q = total_q // n_iterations
             # q /= 10
