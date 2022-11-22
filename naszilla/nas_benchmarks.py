@@ -483,7 +483,7 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd',
-                 is_debug=True
+                 is_debug=False
                  ):
         super().__init__(dataset, data_folder, version, is_debug=is_debug)
         self._is_updated_distances = False
