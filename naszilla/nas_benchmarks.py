@@ -751,14 +751,20 @@ class KNasbench201(Nasbench201):
             self.coreset_indexes = kmedoids.medoid_indices_
 
         elif self.compression_method == 'k_means_coreset':
-            self.compression_kwargs['k'] = self.k_for_coreset[iteration]
+            if self.compression_kwargs['k_ratio']:
+                self.compression_kwargs['k'] = int(len(self.nasbench) * self.compression_kwargs['k_ratio'])
+            else:
+                self.compression_kwargs['k'] = self.k_for_coreset[iteration]
             self.coreset_indexes, self.labels = knas_coreset(
                 self.points, None, **self.compression_kwargs)
             k = self.coreset_indexes.shape[0]
 
         elif self.compression_method == 'k_means_coreset_orig_dist':
-            self.compression_kwargs['k'] = self.k_for_coreset[iteration]
-            self.coreset_indexes, self.labels = knas_coreset(
+            if self.compression_kwargs['k_ratio']:
+                self.compression_kwargs['k'] = int(len(self.nasbench) * self.compression_kwargs['k_ratio'])
+            else:
+                self.compression_kwargs['k'] = self.k_for_coreset[iteration]
+                self.coreset_indexes, self.labels = knas_coreset(
                 self.points, self.distances[self.nasbench.evaluated_indexes][:, self.nasbench.evaluated_indexes],
                 **self.compression_kwargs)
             k = self.coreset_indexes.shape[0]

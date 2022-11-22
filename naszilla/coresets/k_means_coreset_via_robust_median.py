@@ -65,6 +65,7 @@ def k_means_coreset_via_robust_median(P,
                                       dist_matrix=None,
                                       coreset_iteration_sample_size=None,
                                       k=None,
+                                      k_ratio=0,
                                       median_sample_size=10,
                                       tau_for_the_sampled_set=None,
                                       tau_for_the_original_set=None,
@@ -74,6 +75,7 @@ def k_means_coreset_via_robust_median(P,
                                       r=2):
     if median_sample_size < 1:
         median_sample_size = int(median_sample_size * P.shape[0])
+
 
     delta_const = 10
     coreset_list = []
