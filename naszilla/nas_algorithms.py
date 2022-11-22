@@ -126,7 +126,7 @@ class PermutationsController:
         self.search_space = search_space
 
     def I(self, digits, base):
-        return np.sum(digits[::-1] * (base ** np.arange(digits.size)))
+        return np.sum(digits[::-1].astype(np.int64) * (base ** np.arange(digits.size).astype(np.int64)).astype(np.int64)).astype(np.int64)
 
     def insert_iteration(self):
         if len(self.search_space) < 10 * self.alpha_size:
@@ -154,7 +154,7 @@ class PermutationsController:
             mapping[np.argsort(self.acc_values[evaluated_indexes_array[self.search_space.coreset_indexes]])[::-1]],
             clusters_num)
 
-        d = (I_A - I_R) / I_A
+        d = ((I_A - I_R) / I_A).astype(np.float32)
 
         # Update statistics:
         self.trial.append(d)
