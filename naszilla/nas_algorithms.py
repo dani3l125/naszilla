@@ -126,7 +126,7 @@ class PermutationsController:
         self.search_space = search_space
 
     def I(self, digits, base):
-        return np.sum(digits[::-1].astype(np.int64) * (base ** np.arange(digits.size).astype(np.int64)).astype(np.int64)).astype(np.int64)
+        return np.sum(digits[::-1].astype(np.float64) * ((base.astype(np.float64)) ** (np.arange(digits.size) - base).astype(np.float64)))
 
     def insert_iteration(self):
         if len(self.search_space) < 1 * self.alpha_size:
