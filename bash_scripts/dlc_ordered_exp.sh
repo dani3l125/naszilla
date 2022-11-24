@@ -3,7 +3,7 @@
 TRIALS=1
 
 let NTHREADS=$TRIALS*4+4
-for i in 1 2 3 4 5 6 7 8
+for i in 6 7 8
 do
 #  screen -L -Logfile cifar10_exp$i -S cifar10_exp$i -dm srun --gpus=1 --mincpus=$NTHREADS\
 #   --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
@@ -13,7 +13,7 @@ do
 #  --algo_params all_algos --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
 #    --dataset cifar10"
 #
-  screen -L -Logfile cifar100_exp$i -S cifar100_exp$i -dm srun --gpus=1 -w dgx02 --mincpus=$NTHREADS\
+  screen -L -Logfile cifar100_exp$i -S cifar100_exp$i -dm srun --gpus=1 -w dgx03 --mincpus=$NTHREADS\
    --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
    /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
   cd /dyakovlev/naszilla; printf \"\n\n\n####################\n Experiment $i\n####################\n\n\n\"
