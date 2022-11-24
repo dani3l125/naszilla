@@ -76,6 +76,7 @@ def k_means_coreset_via_robust_median(P,
     if median_sample_size < 1:
         median_sample_size = int(median_sample_size * P.shape[0])
 
+    orig_indexes = np.arange(P.shape[0])
 
     delta_const = 10
     coreset_list = []
@@ -94,7 +95,7 @@ def k_means_coreset_via_robust_median(P,
         if random_generation:
             robust_median_q_idxes = np.random.choice(P.shape[0], 1)
             robust_median_q = P[robust_median_q_idxes].flatten()
-            if not dist_matrix is None: #TODO
+            if not dist_matrix is None:
                 opt_devided_by_size = np.sum(
                     ((euclidean_distances(robust_median_q.reshape(1, -1), sample_for_median)).flatten()) ** r) / (
                                               sample_for_median.shape[0] * delta_const)
@@ -126,10 +127,11 @@ def k_means_coreset_via_robust_median(P,
         # print(f'{P.shape}\n\n{closest_points_to_q.max()}\n\n{idxes_for_coreset.max()}')
         sampled_close_points = P[closest_points_to_q[idxes_for_coreset]]
         coreset_list.append(sampled_close_points)
-        coreset_index_list.append(closest_points_to_q[idxes_for_coreset])
+        coreset_index_list.append(orig_indexes[closest_points_to_q[idxes_for_coreset]])
 
         weights_list.append(np.ones(sampled_close_points.shape[0]) * closest_points_to_q.shape[0])
         P = P[far_points_from_q]
+        orig_indexes =orig_indexes[far_points_from_q]
         if not dist_matrix is None:
             dist_matrix = dist_matrix[far_points_from_q][:, far_points_from_q]
         # print(P.shape)
@@ -143,7 +145,7 @@ def k_means_coreset_via_robust_median(P,
                                 replace=Replace_in_coreset_sample)
     weights_list.append(np.ones(coreset_iteration_sample_size) * P.shape[0])
     coreset_list.append(P[last_idx])
-    coreset_index_list.append(last_idx)
+    coreset_index_list.append(orig_indexes[last_idx])
 
     return coreset_list, weights_list, np.concatenate(coreset_list, axis=0), np.concatenate(weights_list, axis=0), \
            np.concatenate(coreset_index_list, axis=0)

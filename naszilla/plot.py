@@ -46,10 +46,10 @@ def plot_experiments(args):
                 'plots/src_data/{}_{}_{}_{}_val.npy'.format(cfg['figName'], args.dataset, compression_method, algo_name))
             ax1.plot(np.arange(10, 301, 10), sota_result, '--', label=label_mapping[algo_name]+', SOTA')
             ax1.plot(np.arange(10, 301, 50), result[9::50], '^', label=label_mapping[algo_name] + ', ours')
-            ax1.plot(np.arange(1, 301, 1), result, '-')
+            ax1.plot(np.arange(1, 301, 1)[9:], result[9:], '-')
             ax2.plot(np.arange(10, 301, 10), sota_val_result, '--', label=label_mapping[algo_name]+', SOTA')
             ax2.plot(np.arange(10, 301, 50), val_result[9::50], '^', label=label_mapping[algo_name]+', ours')
-            ax2.plot(np.arange(1, 301, 1), val_result, '-')
+            ax2.plot(np.arange(1, 301, 1)[9:], val_result[9:], '-')
 
         ax1.legend()
         ax2.legend()

@@ -129,7 +129,7 @@ class PermutationsController:
         return np.sum(digits[::-1].astype(np.int64) * (base ** np.arange(digits.size).astype(np.int64)).astype(np.int64)).astype(np.int64)
 
     def insert_iteration(self):
-        if len(self.search_space) < 10 * self.alpha_size:
+        if len(self.search_space) < 1 * self.alpha_size:
             return
 
         evaluated_indexes_array = np.array(self.search_space.old_nasbench.evaluated_indexes)
@@ -204,8 +204,8 @@ def knas(algo_params, search_space, mp, cfg, control):
         if k != -1:
             # -1 means searching in the final cluster as usual
             k = search_space.prune(i, k)
-            # if control:
-            #     controller.insert_iteration()
+            if control:
+                controller.insert_iteration()
             # q = k * total_q / 15624 if k > 50 else min(50, total_q - q_sum)
             # q = total_q // n_iterations
             # q /= 10
@@ -341,6 +341,10 @@ def evolution_search(search_space,
         # evolve the population by mutating the best architecture
         # from a random subset of the population
         sample = np.random.choice(population, tournament_size)
+        # debugging:
+        if len(losses) == 0:
+            print("Evolution search problem: losses list is empty.")
+            print(f'search space size: {len(search_space)}')
         best_index = sorted([(i, losses[i]) for i in sample], key=lambda i: i[1])[0][0]
         mutated = search_space.mutate_arch(data[best_index]['spec'],
                                            mutation_rate=mutation_rate,
