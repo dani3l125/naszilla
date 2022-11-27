@@ -197,7 +197,10 @@ if __name__ == '__main__':
         print('Done!')
         statistics_dict[dist_name] = {}
         for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
-            space = copy.deepcopy(search_space)
+            space = KNasbench201(dataset=dataset, dist_type=dist_name, n_threads=4,
+                                 compression_method=compression_method,
+                                 compression_args=k_means_coreset_args,
+                                 points_alg='evd')
             if is_debug:
                 dist_matrix = dist_matrix[:150][:,:150]
             space.prune(0, 400)
