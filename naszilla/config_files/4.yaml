@@ -1,6 +1,6 @@
 iterations: 8
 
-distance: 'nasbot'  # Choose: real, lev, adj, path, nasbot
+distance: 'path'  # Choose: real, lev, adj, path, nasbot
 
 threads: 64
 
@@ -16,13 +16,13 @@ k_means_coreset_args:
     coreset_iteration_sample_size: 1
     k: 100
     k_ratio: 0
-    median_sample_size: 40
+    median_sample_size: 60
     tau_for_the_sampled_set: null
     tau_for_the_original_set: null
     Replace_in_coreset_sample: 0
     use_threshold_method: 0
     random_generation: 0
-    r: 2
+    r: 1.5
 
 fullKnas: False  # completely deterministic or not
 
@@ -33,7 +33,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'm15_k100_ciss1_r2_nasbot'
+figName: 'm15_k100_ciss1_r1.5_path'
 
 
 
