@@ -37,7 +37,7 @@ data_folder = '~/nas_benchmark_datasets/'
 
 if is_debug:
     search_space = torch.load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
-elif version == '1_0':
+else:
     search_space = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
 archs_val = np.zeros((3, len(search_space)))
 for i in range(len(search_space)):
