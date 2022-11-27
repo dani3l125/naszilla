@@ -7,6 +7,9 @@ from naszilla.nas_bench_201.distances import *
 from naszilla.nas_bench_201.cell_201 import Cell201
 import argparse
 import torch
+import copy
+
+is_debug = False
 
 k_means_coreset_args = {'coreset_iteration_sample_size': 1,
                         'k': 50,
@@ -30,9 +33,12 @@ median_sample_size_list = [20]
 DEFAULT_K = 12
 DEFAULT_CISS = 1
 DEFAULT_SAMPLE_SIZE_LIST = 20
+data_folder = '~/nas_benchmark_datasets/'
 
-# search_space =  API(os.path.expanduser('~/nas_benchmark_datasets/NAS-Bench-201-v1_0-e61699.pth'))
-search_space = torch.load('/home/daniel/nas_benchmark_datasets/NAS-Bench-mini.pth')
+if is_debug:
+    search_space = torch.load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+elif version == '1_0':
+    search_space = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
 archs_val = np.zeros((3, len(search_space)))
 for i in range(len(search_space)):
     archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['accuracy']
@@ -41,7 +47,7 @@ for i in range(len(search_space)):
 
 d = 10
 dataset = 'cifar100'
-dist_matrix = np.load(f'/home/daniel/distances/{args.dist}_dist.npy')
+dist_matrix = np.load(f'distances/{args.dist}_dist.npy')
 P = np.zeros_like(dist_matrix)[:, :d]
 
 distace_functions = {
@@ -52,10 +58,9 @@ distace_functions = {
     #    'real': real_distance
 }
 
-
 def calculate_distance_mat(dist_name):
-    if os.path.isfile(f'/home/daniel/distances/{dist_name}_dist.npy'):
-        return np.load(f'/home/daniel/distances/{dist_name}_dist.npy')
+    if os.path.isfile(f'distances/{dist_name}_dist.npy'):
+        return np.load(f'distances/{dist_name}_dist.npy')
     dist_matrix = np.zeros((len(search_space), len(search_space)))
     for i, str1 in enumerate(search_space.meta_archs):
         for j, str2 in enumerate(search_space.meta_archs):
@@ -64,9 +69,8 @@ def calculate_distance_mat(dist_name):
             else:
                 dist_matrix[i, j] = distace_functions[dist_name](Cell201(str1), Cell201(str2))
 
-    np.save(f'/home/daniel/distances/{dist_name}_dist.npy', dist_matrix)
+    np.save(f'distances/{dist_name}_dist.npy', dist_matrix)
     return dist_matrix
-
 
 def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_optimums=30):
     _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix, k=k,
@@ -193,11 +197,7 @@ if __name__ == '__main__':
         print('Done!')
         statistics_dict[dist_name] = {}
         for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
-            is_debug = False
-            space = KNasbench201(dataset=dataset, dist_type=dist_name, n_threads=4,
-                                 compression_method=compression_method,
-                                 compression_args=k_means_coreset_args,
-                                 points_alg='evd', is_debug=is_debug)
+            space = copy.deepcopy(search_space)
             if is_debug:
                 dist_matrix = dist_matrix[:150][:,:150]
             space.prune(0, 400)
