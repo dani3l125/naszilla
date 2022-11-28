@@ -196,7 +196,7 @@ if __name__ == '__main__':
         dist_matrix = calculate_distance_mat(dist_name)
         print('Done!')
         statistics_dict[dist_name] = {}
-        for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
+        for compression_method in ['k_means_coreset_orig_dist', 'uniform', 'k_medoids']:
             space = KNasbench201(dataset=dataset, dist_type=dist_name, n_threads=4,
                                  compression_method=compression_method,
                                  compression_args=k_means_coreset_args,
