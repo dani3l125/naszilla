@@ -14,8 +14,8 @@ label_mapping = {'bananas':'BANANAS', 'local_search':'Local search', 'evolution'
 def plot_experiments(args):
     # read configuration
     cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
-
-    for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
+    # ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']
+    for compression_method in ['k_means_coreset_orig_dist']:
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4.5), tight_layout=True)
         custom_cycler = cycler(color=['r', 'r', 'r', 'g', 'g', 'g', 'b','b', 'b', 'y', 'y', 'y'])

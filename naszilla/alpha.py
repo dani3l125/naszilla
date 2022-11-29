@@ -9,12 +9,12 @@ import argparse
 import torch
 import copy
 
-is_debug = False
+is_debug = True
 
 k_means_coreset_args = {'coreset_iteration_sample_size': 1,
-                        'k': 50,
+                        'k': 5,
                         'k_ratio': 0,
-                        'median_sample_size': 40,
+                        'median_sample_size': 4,
                         'tau_for_the_sampled_set': None,
                         'tau_for_the_original_set': None,
                         'Replace_in_coreset_sample': 0,
@@ -200,10 +200,12 @@ if __name__ == '__main__':
             space = KNasbench201(dataset=dataset, dist_type=dist_name, n_threads=4,
                                  compression_method=compression_method,
                                  compression_args=k_means_coreset_args,
-                                 points_alg='evd')
+                                 points_alg='evd', is_debug=is_debug)
             if is_debug:
                 dist_matrix = dist_matrix[:150][:,:150]
-            space.prune(0, 400)
+                space.prune(0, 10)
+            else:
+                space.prune(0, 400)
             statistics_dict[dist_name][compression_method] = cluster_accuracy_statistics(space, dist_matrix)
 
     print(statistics_dict)
