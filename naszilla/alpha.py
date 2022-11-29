@@ -210,5 +210,7 @@ if __name__ == '__main__':
             statistics_dict[dist_name][compression_method] = cluster_accuracy_statistics(space, dist_matrix)
 
     print(statistics_dict)
+    print('coreset iteration sample size= {}, k= {}, median sample size = {}'.format(
+        k_means_coreset_args['coreset_iteration_sample_size'], k_means_coreset_args['k'], k_means_coreset_args['median_sample_size']))
     torch.save(statistics_dict, 'statistics.pth')
     print('Statistics saved')
