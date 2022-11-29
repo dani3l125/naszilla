@@ -7,10 +7,9 @@ from naszilla.nas_bench_201.distances import *
 from naszilla.nas_bench_201.cell_201 import Cell201
 import argparse
 import torch
-import copy
 import json
 
-is_debug = True
+is_debug = False
 
 k_means_coreset_args = {'coreset_iteration_sample_size': 1,
                         'k': 100,
@@ -197,7 +196,7 @@ if __name__ == '__main__':
         dist_matrix = calculate_distance_mat(dist_name)
         print('Done!')
         statistics_dict[dist_name] = {}
-        for compression_method in ['k_means_coreset_orig_dist', 'k_medoids']:
+        for compression_method in ['k_means_coreset_orig_dist', 'uniform', 'k_medoids']:
             space = KNasbench201(dataset=dataset, dist_type=dist_name, n_threads=4,
                                  compression_method=compression_method,
                                  compression_args=k_means_coreset_args,
@@ -209,7 +208,7 @@ if __name__ == '__main__':
                 space.prune(0, 400)
             statistics_dict[dist_name][compression_method] = cluster_accuracy_statistics(space, dist_matrix)
 
-    print(statistics_dict)
+    print(json.dumps(statistics_dict, sort_keys=True, indent=4))
     print('coreset iteration sample size= {}, k= {}, median sample size = {}'.format(
         k_means_coreset_args['coreset_iteration_sample_size'], k_means_coreset_args['k'], k_means_coreset_args['median_sample_size']))
     torch.save(statistics_dict, 'statistics.pth')
