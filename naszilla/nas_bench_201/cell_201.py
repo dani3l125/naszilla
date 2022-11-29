@@ -361,8 +361,11 @@ class Cell201:
             distances = np.zeros(len(arch_list))
             for i, arch in enumerate(arch_list):
                 distances[i] = adj_distance(self, Cell201(arch))
-            for idx in np.where(distances == np.min(distances))[0]:
-                nbhd.append({'string':arch_list[idx]})
+            # for idx in np.where(distances == np.min(distances))[0]:
+            #     nbhd.append({'string':arch_list[idx]})
+            indexes = np.argsort(distances)[:24]  # Generate same number of neighbours as in original data.
+            for idx in indexes:
+                nbhd.append({'string': arch_list[idx]})
 
 
         else:
@@ -403,6 +406,6 @@ class Cell201:
                 raise NotImplementedError()
 
         if shuffle:
-            random.shuffle(nbhd)                
+            random.shuffle(nbhd)
         return nbhd
 
