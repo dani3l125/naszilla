@@ -8,13 +8,14 @@ from naszilla.nas_bench_201.cell_201 import Cell201
 import argparse
 import torch
 import copy
+import json
 
 is_debug = True
 
 k_means_coreset_args = {'coreset_iteration_sample_size': 1,
-                        'k': 5,
+                        'k': 100,
                         'k_ratio': 0,
-                        'median_sample_size': 4,
+                        'median_sample_size': 40,
                         'tau_for_the_sampled_set': None,
                         'tau_for_the_original_set': None,
                         'Replace_in_coreset_sample': 0,
