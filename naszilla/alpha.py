@@ -1,5 +1,6 @@
 import numpy as np
 from naszilla.coresets.k_means_coreset_via_robust_median import k_means_coreset_via_robust_median
+from scipy.spatial import distance_matrix
 from naszilla.nas_benchmarks import KNasbench201
 import os
 from nas_201_api import NASBench201API as API
@@ -9,7 +10,7 @@ import argparse
 import torch
 import json
 
-is_debug = False
+is_debug = True
 
 k_means_coreset_args = {'coreset_iteration_sample_size': 1,
                         'k': 100,
@@ -58,6 +59,7 @@ distace_functions = {
     #    'real': real_distance
 }
 
+
 def calculate_distance_mat(dist_name):
     if os.path.isfile(f'distances/{dist_name}_dist.npy'):
         return np.load(f'distances/{dist_name}_dist.npy')
@@ -71,6 +73,7 @@ def calculate_distance_mat(dist_name):
 
     np.save(f'distances/{dist_name}_dist.npy', dist_matrix)
     return dist_matrix
+
 
 def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_optimums=30):
     _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix, k=k,
@@ -155,38 +158,67 @@ def search_space_stats(num_of_optimums=30, knn=150):
 
 
 def cluster_accuracy_statistics(space, dist_matrix):
+    return_dict = {}
     for i, dataset in enumerate(['cifar10', 'cifar100', 'ImageNet16-120']):
         clusters_num = space.labels.max() + 1
         clusters_best_values = -1 * np.ones((clusters_num,))
+        clusters_avg_values = -1 * np.ones((clusters_num,))
+
         clusters_maximal_distances_acc = -1 * np.ones((clusters_num,))
-        clusters_center_distances_acc = -1 * np.ones((clusters_num,))
+        clusters_avg_distances_acc = -1 * np.ones((clusters_num,))  # TODO fill up with distance_matrix calculation
+
+        clusters_maximal_center_distances_acc = -1 * np.ones((clusters_num,))
+        clusters_avg_center_distances_acc = -1 * np.ones((clusters_num,))
+
         clusters_maximal_distances_metric = -1 * np.ones((clusters_num,))
-        clusters_center_distances_metric = -1 * np.ones((clusters_num,))
+        clusters_avg_distances_metric = -1 * np.ones((clusters_num,))  # TODO fill up with indexing
+
+        clusters_maximal_center_distances_metric = -1 * np.ones((clusters_num,))
+        clusters_avg_center_distances_metric = -1 * np.ones((clusters_num,))
+
         evaluated_indexes_array = np.array(space.old_nasbench.evaluated_indexes)
         for label in range(clusters_num):
             label_values = archs_val[i][evaluated_indexes_array
             [np.argwhere(space.labels == label)].T[0]]
             clusters_best_values[label] = label_values.max()
+            clusters_avg_values[label] = np.mean(label_values)
             clusters_maximal_distances_acc[label] = clusters_best_values[label] - label_values.min()
-            clusters_center_distances_acc[label] = clusters_best_values[label] - archs_val[i][
-                space.coreset_indexes[label]]
-            clusters_maximal_distances_metric[label] = dist_matrix[evaluated_indexes_array
+            clusters_avg_distances_acc[label] = np.mean(
+                distance_matrix(label_values.reshape((label_values.shape[0], 1)),
+                                label_values.reshape((label_values.shape[0], 1))))
+            clusters_maximal_center_distances_acc[label] = (label_values - archs_val[i][
+                space.coreset_indexes[label]]).max()
+            clusters_avg_center_distances_acc[label] = np.mean(label_values - archs_val[i][
+                space.coreset_indexes[label]])
+            in_cluster_metric_dist_matrix = dist_matrix[evaluated_indexes_array
             [np.argwhere(space.labels == label)].T[0]][:, evaluated_indexes_array
-                                                     [np.argwhere(space.labels == label)].T[0]].max()
-            clusters_center_distances_metric[label] = dist_matrix[evaluated_indexes_array
-            [np.argwhere(space.labels == label)].T[0]][:, space.coreset_indexes[label]].max()
+                                                          [np.argwhere(space.labels == label)].T[0]]
+            clusters_maximal_distances_metric[label] = in_cluster_metric_dist_matrix.max()
+            clusters_avg_distances_metric[label] = np.mean(in_cluster_metric_dist_matrix)
+            cluster_distances_to_center = dist_matrix[evaluated_indexes_array
+            [np.argwhere(space.labels == label)].T[0]][:, space.coreset_indexes[label]]
+            clusters_maximal_center_distances_metric[label] = cluster_distances_to_center.max()
+            clusters_avg_center_distances_metric[label] = np.mean(cluster_distances_to_center)
 
-        return {'clusters maximal accuracy distance (mean, std)': (
-                np.mean(clusters_maximal_distances_acc), np.std(clusters_maximal_distances_acc)),
-                'clusters maximal accuracy distance from center (mean, std)': (
-                np.mean(clusters_center_distances_acc), np.std(clusters_center_distances_acc)),
-                'clusters maximal metric distance (mean, std)': (
+        return_dict[dataset] = {'clusters maximal accuracy distance (mean, std)': (
+            np.mean(clusters_maximal_distances_acc), np.std(clusters_maximal_distances_acc)),
+            'clusters maximal accuracy distance from center (mean, std)': (
+                np.mean(clusters_maximal_center_distances_acc), np.std(clusters_maximal_center_distances_acc)),
+            'clusters maximal metric distance (mean, std)': (
                 np.mean(clusters_maximal_distances_metric), np.std(clusters_maximal_distances_metric)),
-                'clusters maximal metric distance from center (mean, std)': (
-                np.mean(clusters_center_distances_metric), np.std(clusters_center_distances_metric))
-                }
+            'clusters maximal metric distance from center (mean, std)': (
+                np.mean(clusters_maximal_center_distances_metric), np.std(clusters_maximal_center_distances_metric)),
+            'clusters average accuracy distance (mean, std)': (
+                np.mean(clusters_avg_distances_acc), np.std(clusters_avg_distances_acc)),
+            'clusters average accuracy distance from center (mean, std)': (
+                np.mean(clusters_avg_center_distances_acc), np.std(clusters_avg_center_distances_acc)),
+            'clusters average metric distance (mean, std)': (
+                np.mean(clusters_avg_distances_metric), np.std(clusters_avg_distances_metric)),
+            'clusters average metric distance from center (mean, std)': (
+                np.mean(clusters_avg_center_distances_metric), np.std(clusters_avg_center_distances_metric))
+        }
 
-
+        return return_dict
 
 
 if __name__ == '__main__':
@@ -202,7 +234,7 @@ if __name__ == '__main__':
                                  compression_args=k_means_coreset_args,
                                  points_alg='evd', is_debug=is_debug)
             if is_debug:
-                dist_matrix = dist_matrix[:150][:,:150]
+                dist_matrix = dist_matrix[:150][:, :150]
                 space.prune(0, 10)
             else:
                 space.prune(0, 400)
@@ -210,6 +242,7 @@ if __name__ == '__main__':
 
     print(json.dumps(statistics_dict, sort_keys=True, indent=4))
     print('coreset iteration sample size= {}, k= {}, median sample size = {}'.format(
-        k_means_coreset_args['coreset_iteration_sample_size'], k_means_coreset_args['k'], k_means_coreset_args['median_sample_size']))
+        k_means_coreset_args['coreset_iteration_sample_size'], k_means_coreset_args['k'],
+        k_means_coreset_args['median_sample_size']))
     torch.save(statistics_dict, 'statistics.pth')
     print('Statistics saved')
