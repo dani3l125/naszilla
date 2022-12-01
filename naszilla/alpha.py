@@ -165,13 +165,13 @@ def cluster_accuracy_statistics(space, dist_matrix):
         clusters_avg_values = -1 * np.ones((clusters_num,))
 
         clusters_maximal_distances_acc = -1 * np.ones((clusters_num,))
-        clusters_avg_distances_acc = -1 * np.ones((clusters_num,))  # TODO fill up with distance_matrix calculation
+        clusters_avg_distances_acc = -1 * np.ones((clusters_num,))
 
         clusters_maximal_center_distances_acc = -1 * np.ones((clusters_num,))
         clusters_avg_center_distances_acc = -1 * np.ones((clusters_num,))
 
         clusters_maximal_distances_metric = -1 * np.ones((clusters_num,))
-        clusters_avg_distances_metric = -1 * np.ones((clusters_num,))  # TODO fill up with indexing
+        clusters_avg_distances_metric = -1 * np.ones((clusters_num,))
 
         clusters_maximal_center_distances_metric = -1 * np.ones((clusters_num,))
         clusters_avg_center_distances_metric = -1 * np.ones((clusters_num,))
