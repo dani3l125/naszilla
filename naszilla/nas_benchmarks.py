@@ -418,7 +418,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=True):
+                 is_debug=False):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
@@ -483,7 +483,7 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd',
-                 is_debug=True
+                 is_debug=False
                  ):
         super().__init__(dataset, data_folder, version, is_debug=is_debug)
         self._is_updated_distances = False
@@ -606,6 +606,8 @@ class KNasbench201(Nasbench201):
         dist_matrix = np.array(self.distances[np.array(self.nasbench.evaluated_indexes)].T[
             np.array(self.nasbench.evaluated_indexes)], dtype=np.float16)
 
+        self.points_alg == 'icba'
+
         if self.points_alg == 'evd':
             m_row = np.tile(dist_matrix[0] ** 2, (dist_matrix.shape[0], 1))
             m_col = np.tile(dist_matrix.T[0] ** 2, (dist_matrix.shape[0], 1)).T
@@ -662,12 +664,7 @@ class KNasbench201(Nasbench201):
 
                     intersections = cp.concatenate((intersections1, intersections2, disjoint_intersections), dtype=cp.float16)
                     intersections = intersections[~cp.isnan(intersections), ~cp.isnan(intersections)]
-                    intersections_losses = cp.nan_to_num(cp.sum(cp.abs
-                                                  (cp.linalg.norm(
-                                                   intersections[:, None, :] - centers[None, :, :] ,axis = -1),
-                                                   cp.tile(cp.expand_dims(R, 0),
-                                                           intersections.shape[0]).reshape(-1, m)),
-                                                  axis=1), nan=cp.inf)
+                    intersections_losses = cp.nan_to_num(cp.sum(cp.abs(cp.linalg.norm(intersections[:, None, :] - centers[None, :, :] ,axis = -1),cp.tile(cp.expand_dims(R, 0),intersections.shape[0]).reshape(-1, m)),axis=1), nan=cp.inf)
 
                     points.append(cp.expand_dims(intersections[cp.argmin(intersections_losses)], 0))
                     print(f'ICBA iteration={m}, distance={cp.min(intersections_losses)}, time={time.time() -start_i}')
