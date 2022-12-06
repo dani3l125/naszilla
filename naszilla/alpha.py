@@ -10,7 +10,7 @@ import argparse
 import torch
 import json
 
-is_debug = True
+is_debug = False
 
 k_means_coreset_args = {'coreset_iteration_sample_size': 1,
                         'k': 100,
