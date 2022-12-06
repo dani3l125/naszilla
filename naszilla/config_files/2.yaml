@@ -13,8 +13,8 @@ manual_schedulers: False
 m_c: 2
 
 k_means_coreset_args:
-    coreset_iteration_sample_size: 1
-    k: [200, 100, 50]
+    coreset_iteration_sample_size: 5
+    k: 70
     k_ratio: 0
     median_sample_size: 50
     tau_for_the_sampled_set: null
@@ -33,7 +33,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'm2_k200t100t50_ciss1_r2_path'
+figName: 'm2_k70_ciss5_r2_path'
 
 
 

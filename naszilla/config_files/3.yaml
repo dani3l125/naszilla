@@ -21,8 +21,8 @@ k_means_coreset_args:
     tau_for_the_original_set: null
     Replace_in_coreset_sample: 0
     use_threshold_method: 0
-    random_generation: 0
-    r: 3
+    random_generation: 1
+    r: 2
 
 fullKnas: False  # completely deterministic or not
 
@@ -33,7 +33,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'm2_k100_ciss1_r3_path'
+figName: 'm2_k100_ciss1_r2_random_generation_path'
 
 
 
