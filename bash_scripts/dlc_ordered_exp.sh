@@ -3,7 +3,7 @@
 TRIALS=1
 
 let NTHREADS=$TRIALS*4*3+4
-for i in 1 2 3 4
+for i in 1 2 3 4 5
 do
   screen -L -Logfile cifar10_exp$i -S cifar10_exp$i -dm srun --mincpus=$NTHREADS\
    --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
