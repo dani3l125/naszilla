@@ -1,0 +1,25 @@
+iterations: 4
+
+distance: 'nasbot'  # Choose: real, lev, adj, path, nasbot
+
+threads: 16
+
+fullKnas: False  # completely deterministic or not
+
+kScheduler:
+  type: "geometric"  # Choose: linear, geometric, manual
+  first: 400  # can be set to -c: such that maxVal is size/c
+  last: 100  # can be set to -c: such that mivVal is size/c
+  manual: []
+
+mScheduler:
+  type: "linear"
+  first: 0  # can be set to -c
+  last: 0  # can be set to -c
+  manual: []
+
+qScheduler:
+  type: "linear"
+  first: 100  # can be set to -c, not used in case of geometric
+  ratio: 1.5
+  manual: []
