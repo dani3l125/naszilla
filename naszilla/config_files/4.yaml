@@ -15,6 +15,7 @@ m_c: 2
 k_means_coreset_args:
     coreset_iteration_sample_size: 1
     k: 100
+    k_ratio: 0
     median_sample_size: 50
     tau_for_the_sampled_set: null
     tau_for_the_original_set: null
