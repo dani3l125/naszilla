@@ -20,10 +20,11 @@ from nas_benchmarks import MutationTree
 
 # default parameters for the NAS algorithms
 DEFAULT_NUM_INIT = 10
-DEFAULT_K = 10
+DEFAULT_K = 1
 DEFAULT_TOTAL_QUERIES = 150
 DEFAULT_LOSS = 'val_loss'
 SIG_DONE = True
+GLOBAL_QUERY = 0
 
 
 def signal_handler(signum, frame):
@@ -76,7 +77,7 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg, control=True):
     if 'loss' not in ps:
         ps['loss'] = DEFAULT_LOSS
 
-    result, val_result = compute_best_test_losses(data, 1, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg \
+    result, val_result = compute_best_test_losses(data, DEFAULT_K, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg \
         else compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], 0, DEFAULT_LOSS)
     return result, val_result, data, cluster_sizes_list, trial_stats
 
@@ -166,6 +167,8 @@ def knas(algo_params, search_space, mp, cfg, control):
         controller = PermutationsController(search_space)
 
     # run nas algorithm
+    global GLOBAL_QUERY
+    GLOBAL_QUERY = algo_params['total_queries']
 
     n_iterations = cfg['iterations']
     total_q = algo_params['total_queries']
@@ -214,11 +217,10 @@ def knas(algo_params, search_space, mp, cfg, control):
             m = q // cfg['m_c']
 
         ps['total_queries'] = q
+        ps['global_queries'] = cfg['global_queries']
         print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
 
-        if algo_name == 'pknas':
-            data = search_space.generate_complete_dataset()
-        elif algo_name == 'random':
+        if algo_name == 'random':
             data = random_search(search_space, **ps)
         elif algo_name == 'evolution':
             data = evolution_search(search_space, **ps,
@@ -227,23 +229,9 @@ def knas(algo_params, search_space, mp, cfg, control):
             data = bananas(search_space, mp, **ps, predictor='bananas',
                            mutation_tree=MutationTree(search_space.nasbench.meta_archs),
                            meta_neuralnet=meta_neuralnet)
-        elif algo_name == 'bonas':
-            data = bananas(search_space, mp, **ps, predictor='gcn', predictor_encoding='gcn')
-        elif algo_name == 'gp_bayesopt':
-            data = gp_bayesopt_search(search_space, **ps)
-        elif algo_name == 'dngo':
-            data = pybnn_search(search_space, model_type='dngo', **ps)
-        elif algo_name == 'bohamiann':
-            data = pybnn_search(search_space, model_type='bohamiann', **ps)
         elif algo_name == 'local_search':
             data = local_search(search_space, **ps,
                                 is_knas=True)
-        elif algo_name == 'gcn_predictor':
-            data = gcn_predictor(search_space, **ps)
-        elif algo_name == 'vaenas':
-            # data = bananas(search_space, mp, **ps, predictor='vae', predictor_encoding='vae')
-            print('Currently not implemented')
-            raise NotImplementedError()
         else:
             print('Invalid algorithm name')
             raise NotImplementedError()
@@ -295,7 +283,8 @@ def random_search(search_space,
                   random_encoding='adj',
                   cutoff=0,
                   deterministic=True,
-                  verbose=1):
+                  verbose=1,
+                  global_queries=False):
     """ 
     random search
     """
@@ -324,7 +313,8 @@ def evolution_search(search_space,
                      deterministic=True,
                      regularize=True,
                      verbose=1,
-                     mutation_tree=None):
+                     mutation_tree=None,
+                     global_queries=False):
     """
     regularized evolution
     """
@@ -335,8 +325,10 @@ def evolution_search(search_space,
     losses = [d[loss] for d in data]
     query = num_init
     population = [i for i in range(min(num_init, population_size))]
+    last_top_5_loss = None
+    global GLOBAL_QUERY
 
-    while query <= total_queries:
+    while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
 
         # evolve the population by mutating the best architecture
         # from a random subset of the population
@@ -369,8 +361,12 @@ def evolution_search(search_space,
         if verbose and (query % k == 0):
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
             print('evolution, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
-
+            if top_5_loss == last_top_5_loss:
+                query += 1
+                break
+            last_top_5_loss = top_5_loss
         query += 1
+    GLOBAL_QUERY -= query
     return data
 
 
@@ -393,7 +389,8 @@ def bananas(search_space,
             deterministic=True,
             verbose=1,
             mutation_tree=None,
-            meta_neuralnet=None):
+            meta_neuralnet=None,
+            global_queries=False):
     """
     Bayesian optimization with a neural predictor
     """
@@ -405,8 +402,10 @@ def bananas(search_space,
                                                 cutoff=cutoff)
 
     query = num_init + k
+    last_top_5_loss = None
+    global GLOBAL_QUERY
 
-    while query <= total_queries:
+    while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
 
         xtrain = np.array([d['encoding'] for d in data])
         ytrain = np.array([d[loss] for d in data])
@@ -505,10 +504,13 @@ def bananas(search_space,
 
         if verbose:
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
-            print('{}, query {}, top 5 losses in current iteration {}'.format(predictor, query, top_5_loss))
-
-        # we just finished performing k queries
+            print('evolution, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
+            if top_5_loss == last_top_5_loss:
+                query += 1
+                break
+            last_top_5_loss = top_5_loss
         query += k
+    GLOBAL_QUERY -= query
 
     return data
 
@@ -525,7 +527,8 @@ def local_search(search_space,
                  total_queries=DEFAULT_TOTAL_QUERIES,
                  deterministic=True,
                  verbose=1,
-                 is_knas=False):
+                 is_knas=False,
+                 global_queries=False):
     """
     local search
     """
@@ -533,25 +536,14 @@ def local_search(search_space,
     iter_dict = {}
     data = []
     query = 0
+    last_top_5_loss = None
+    global GLOBAL_QUERY
 
     while True:
         # loop over full runs of local search until queries run out
 
         arch_dicts = []
         while len(arch_dicts) < num_init:
-            # try:
-            #     SIG_DONE = False
-            #     signal.signal(signal.SIGALRM, signal_handler)
-            #     signal.alarm(300)  # 300 seconds
-            #     arch_dict = search_space.query_arch(random_encoding=random_encoding,
-            #                                         deterministic=deterministic,
-            #                                         epochs=epochs)
-            #     SIG_DONE = True
-            #
-            # except:
-            #     print("Timed out!")
-            #     return data
-
             arch_dict = search_space.query_arch(random_encoding=random_encoding,
                                                 deterministic=deterministic,
                                                 epochs=epochs)
@@ -561,7 +553,8 @@ def local_search(search_space,
                 data.append(arch_dict)
                 arch_dicts.append(arch_dict)
                 query += 1
-                if query >= total_queries:
+                if (query >= total_queries and not global_queries) or (global_queries and GLOBAL_QUERY - query <= 0):
+                    GLOBAL_QUERY -= query
                     return data
 
         sorted_arches = sorted([(arch, arch[loss]) for arch in arch_dicts], key=lambda i: i[1])
@@ -584,7 +577,9 @@ def local_search(search_space,
                     data.append(nbr_dict)
                     nbhd_dicts.append(nbr_dict)
                     query += 1
-                    if query >= total_queries:
+                    if (query >= total_queries and not global_queries) or (
+                            global_queries and GLOBAL_QUERY - query <= 0):
+                        GLOBAL_QUERY -= query
                         return data
                     if nbr_dict[loss] < arch_dict[loss]:
                         improvement = True
@@ -610,6 +605,10 @@ def local_search(search_space,
         if verbose:
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
             print('local_search, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
+            if top_5_loss == last_top_5_loss:
+                GLOBAL_QUERY -= query
+                return data
+            last_top_5_loss = top_5_loss
 
 
 def gcn_predictor(search_space,
