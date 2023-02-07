@@ -66,6 +66,7 @@ def k_means_coreset_via_robust_median(P,
                                       coreset_iteration_sample_size=None,
                                       k=None,
                                       k_ratio=0,
+                                      sum_to_max=False,
                                       median_sample_size=10,
                                       tau_for_the_sampled_set=None,
                                       tau_for_the_original_set=None,
@@ -73,6 +74,7 @@ def k_means_coreset_via_robust_median(P,
                                       use_threshold_method=False,
                                       random_generation=False,
                                       r=2):
+    print('Is using max = ', sum_to_max)
     if median_sample_size < 1:
         median_sample_size = int(median_sample_size * P.shape[0])
 
@@ -106,7 +108,7 @@ def k_means_coreset_via_robust_median(P,
             # print(opt_devided_by_size)
         else:
             robust_median_q, opt_devided_by_size, robust_median_q_idx = compute_robust_median(sample_for_median, tau_for_the_sampled_set,
-                                                                         use_threshold_method, r, sample_for_median_dist_matrix)  # np.mean(P,axis=0)
+                                                                         use_threshold_method, r, sample_for_median_dist_matrix, is_max=sum_to_max)  # np.mean(P,axis=0)
             # print(opt_devided_by_size)
         if not use_threshold_method:
             sorted_indexes_of_distances_from_q = euclidean_distances(robust_median_q.reshape(1, -1), P).argsort()[0] \
@@ -151,12 +153,15 @@ def k_means_coreset_via_robust_median(P,
            np.concatenate(coreset_index_list, axis=0)
 
 
-def compute_robust_median(Q, tau, use_threshold_method, r, dist_matrix=None):
+def compute_robust_median(Q, tau, use_threshold_method, r, dist_matrix=None, is_max=False):
     opt_devided_by_size = None
     # print(Q.shape)
     distance_table = dist_matrix ** r if not dist_matrix is None else euclidean_distances(Q, Q) ** r
     distance_table.sort(axis=1)
-    sum_of_ditance_for_each_row = np.sum(distance_table[:, :int(tau * Q.shape[0]) + 1], axis=1)
+    if is_max:
+        sum_of_ditance_for_each_row = np.max(distance_table[:, :int(tau * Q.shape[0]) + 1], axis=1)
+    else:
+        sum_of_ditance_for_each_row = np.sum(distance_table[:, :int(tau * Q.shape[0]) + 1], axis=1)
     idx = np.argmin(sum_of_ditance_for_each_row)
     q = Q[idx]
     if use_threshold_method:
