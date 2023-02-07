@@ -74,7 +74,6 @@ def k_means_coreset_via_robust_median(P,
                                       use_threshold_method=False,
                                       random_generation=False,
                                       r=2):
-    print('Is using max = ', sum_to_max)
     if median_sample_size < 1:
         median_sample_size = int(median_sample_size * P.shape[0])
 
