@@ -237,7 +237,8 @@ def knas(algo_params, search_space, mp, cfg, control):
             raise NotImplementedError()
         final_data.extend(data)
         # if algo_name == 'pknas':
-        result, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], q_sum, DEFAULT_LOSS)
+        queries = ps['total_queries'] if cfg['global_queries'] else cfg['global_queries'] - GLOBAL_QUERY
+        result, val_result = compute_best_test_losses(data, DEFAULT_K, queries, q_sum, DEFAULT_LOSS)
         print(f'\n Result: {val_result} Optimal: {search_space.get_best_arch_loss()}\n#####')
         q_sum += q
 
@@ -325,7 +326,7 @@ def evolution_search(search_space,
     losses = [d[loss] for d in data]
     query = num_init
     population = [i for i in range(min(num_init, population_size))]
-    last_best_loss = None
+    last_5_loss = None
     early_stop = 0
     global GLOBAL_QUERY
 
@@ -362,15 +363,15 @@ def evolution_search(search_space,
         if verbose and (query % k == 0):
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
             print('evolution, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
-            if top_5_loss[0] == last_best_loss:
+            if top_5_loss == last_5_loss:
                 early_stop += 1
             else:
                 early_stop = 0
-            if early_stop == 3:
+            if early_stop == 2:
                 print("Breaking while loop")
                 query += 1
                 break
-            last_best_loss = top_5_loss[0]
+            last_5_loss = top_5_loss
         query += 1
     GLOBAL_QUERY -= query
     return data
@@ -408,7 +409,7 @@ def bananas(search_space,
                                                 cutoff=cutoff)
 
     query = num_init + k
-    last_best_loss = None
+    last_5_loss = None
     early_stop = 0
     global GLOBAL_QUERY
 
@@ -513,15 +514,15 @@ def bananas(search_space,
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
             
             print('evolution, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
-            if top_5_loss[0] == last_best_loss:
+            if top_5_loss == last_5_loss:
                 early_stop+=1
             else:
                 early_stop=0
-            if early_stop == 3:
+            if early_stop == 2:
                 print("Breaking while loop")
                 query += k
                 break
-            last_best_loss = top_5_loss[0]
+            last_5_loss = top_5_loss
         query += k
     GLOBAL_QUERY -= query
 
@@ -549,7 +550,7 @@ def local_search(search_space,
     iter_dict = {}
     data = []
     query = 0
-    last_best_loss = None
+    last_5_loss = None
     global GLOBAL_QUERY
 
     while True:
@@ -618,10 +619,10 @@ def local_search(search_space,
         if verbose:
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
             print('local_search, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
-            if top_5_loss == last_best_loss:
+            if top_5_loss == last_5_loss:
                 GLOBAL_QUERY -= query
                 return data
-            last_best_loss = top_5_loss
+            last_5_loss = top_5_loss
 
 
 def gcn_predictor(search_space,
