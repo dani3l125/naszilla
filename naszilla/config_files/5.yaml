@@ -8,7 +8,7 @@ compression_method: 'k_means_coreset_orig_dist' # k_means_coreset, k_medoids
 
 qAutofill: True
 
-global_queries: False
+global_queries: True
 
 manual_schedulers: False
 

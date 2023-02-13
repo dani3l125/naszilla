@@ -367,6 +367,7 @@ def evolution_search(search_space,
             else:
                 early_stop = 0
             if early_stop == 3:
+                print("Breaking while loop")
                 query += 1
                 break
             last_best_loss = top_5_loss[0]
@@ -516,7 +517,8 @@ def bananas(search_space,
                 early_stop+=1
             else:
                 early_stop=0
-            if early_stop==3:
+            if early_stop == 3:
+                print("Breaking while loop")
                 query += k
                 break
             last_best_loss = top_5_loss[0]
