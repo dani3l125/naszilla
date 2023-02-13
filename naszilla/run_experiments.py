@@ -64,7 +64,7 @@ def run_experiments(args, save_dir):
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
             starttime = time.time()
             # this line runs the nas algorithm and returns the result
-            result, val_result, run_datum = run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg, cfg)
+            result, val_result, run_datum, _, _ = run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg, cfg)
 
             result = np.round(result, 5)
             val_result = np.round(val_result, 5)
@@ -106,13 +106,6 @@ def run_experiments(args, save_dir):
         if args.save_sota:
             np.save(f'sota_results_new/{args.algo_params}_{args.dataset}_mean.npy', result_mean)
             np.save(f'sota_results_new/{args.algo_params}_{args.dataset}_std.npy', result_std)
-
-        else:
-            sota_result = np.load(f'sota_results/{args.algo_params}_{args.dataset}.npy')
-            plt.plot(sota_result, color='green')
-            plt.plot(result_mean)  # TODO debug to here, check x axis values and correct to 10, 20, 30...
-            plt.savefig('{}.png'.format(cfg['figName']))
-
 
 def main(args):
     # make save directory
