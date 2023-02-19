@@ -219,7 +219,7 @@ def knas(algo_params, search_space, mp, cfg, control):
         ps['total_queries'] = q
         ps['global_queries'] = cfg['global_queries']
         print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
-
+        start_query = GLOBAL_QUERY
         if algo_name == 'random':
             data = random_search(search_space, **ps)
         elif algo_name == 'evolution':
@@ -236,9 +236,8 @@ def knas(algo_params, search_space, mp, cfg, control):
             print('Invalid algorithm name')
             raise NotImplementedError()
         final_data.extend(data)
-        # if algo_name == 'pknas':
-        queries = ps['total_queries'] if cfg['global_queries'] else cfg['global_queries'] - GLOBAL_QUERY
-        result, val_result = compute_best_test_losses(data, DEFAULT_K, queries, q_sum, DEFAULT_LOSS)
+        queries = ps['total_queries'] if cfg['global_queries'] else (cfg['total_queries'] - GLOBAL_QUERY)
+        result, val_result = compute_best_test_losses(data, DEFAULT_K, queries, start_query, DEFAULT_LOSS)
         print(f'\n Result: {val_result} Optimal: {search_space.get_best_arch_loss()}\n#####')
         q_sum += q
 

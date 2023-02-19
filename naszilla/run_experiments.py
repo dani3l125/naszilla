@@ -119,8 +119,6 @@ def run_experiments(args, save_dir):
             tmp_val_results = list(val_results[algorithm_params[j]['algo_name']].values())
             tmp_walltimes = list(walltimes[algorithm_params[j]['algo_name']].values())
             tmp_run_data = list(run_data[algorithm_params[j]['algo_name']].values())
-            print(f'\n\n$$$$$$$$$ Alg: {j} Lenths:{len(tmp_results)}, {len(tmp_val_results)}')
-            print(f'Object: {tmp_results}')
 
             if not len(tmp_results):
                 continue
@@ -186,11 +184,17 @@ def run_experiments(args, save_dir):
             ax2.errorbar(x=np.arange(1, 301, 1), y=val_result, yerr=algorithm_val_results[algo_name][1],
                          fmt='-', errorevery=10)
             np.save(
-                'plots/src_data/{}_{}_{}_{}_val'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                'plots/src_data/{}_{}_{}_{}_val_mean'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 val_result)
             np.save(
-                'plots/src_data/{}_{}_{}_{}'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                'plots/src_data/{}_{}_{}_{}_mean'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 result)
+            np.save(
+                'plots/src_data/{}_{}_{}_{}_val_std'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                algorithm_val_results[algo_name][1])
+            np.save(
+                'plots/src_data/{}_{}_{}_{}_std'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                algorithm_results[algo_name][1])
         ax1.legend()
         ax2.legend()
         plt.savefig('plots/{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method))
