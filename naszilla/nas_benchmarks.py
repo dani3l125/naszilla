@@ -418,7 +418,7 @@ class Nasbench201(Nasbench):
                  dataset='cifar10',
                  data_folder=default_data_folder,
                  version='1_0',
-                 is_debug=True):
+                 is_debug=False):
         self.search_space = 'nasbench_201'
         self.dataset = dataset
         self.index_hash = None
@@ -483,7 +483,7 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd',
-                 is_debug=True
+                 is_debug=False
                  ):
         super().__init__(dataset, data_folder, version, is_debug=is_debug)
         self._is_updated_distances = False
