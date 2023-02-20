@@ -43,7 +43,7 @@ def run_experiments(args, save_dir):
         # manager = multiprocessing.Manager()
         algorithm_results = {}
         algorithm_val_results = {}
-        trial_stats_dict = {}
+        kq_lists_dict = {}
         results = {}
         val_results = {}
         walltimes = {}
@@ -73,7 +73,7 @@ def run_experiments(args, save_dir):
 
             starttime = time.time()
             # this line runs the nas algorithm and returns the result
-            result, val_result, run_datum, cluster_sizes_list, trial_stats = \
+            result, val_result, run_datum, cluster_sizes_list, kq_list = \
                 run_nas_algorithm(algorithm_params[j], search_space, mp, args.k_alg, cfg)
 
             result = np.round(result, 5)
@@ -92,7 +92,7 @@ def run_experiments(args, save_dir):
             results[algorithm_params[j]['algo_name']][i] = result
             val_results[algorithm_params[j]['algo_name']][i] = val_result
             run_data[algorithm_params[j]['algo_name']][i] = run_datum
-            trial_stats_dict[algorithm_params[j]['algo_name']][i] = trial_stats
+            kq_lists_dict[algorithm_params[j]['algo_name']][i] = kq_list
 
         for j in range(num_algos):
 
@@ -100,7 +100,7 @@ def run_experiments(args, save_dir):
             results[algorithm_params[j]['algo_name']] = {}
             val_results[algorithm_params[j]['algo_name']] = {}
             run_data[algorithm_params[j]['algo_name']] = {}
-            trial_stats_dict[algorithm_params[j]['algo_name']] = {}
+            kq_lists_dict[algorithm_params[j]['algo_name']] = {}
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
             for i in range(trials):

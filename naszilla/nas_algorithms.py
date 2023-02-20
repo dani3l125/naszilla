@@ -38,12 +38,12 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg, control=True):
     algo_name = ps.pop('algo_name')
     cluster_sizes_list = []
 
-    trial_stats = None
+    kq_list = None
 
     if k_alg:
         if cfg is None:
             raise Exception('No configuration file')
-        data, trial_stats = knas(algo_params, search_space, mp, cfg, control)
+        data, kq_list = knas(algo_params, search_space, mp, cfg, control)
     elif algo_name == 'random':
         data = random_search(search_space, **ps)
     elif algo_name == 'evolution':
@@ -79,7 +79,7 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg, control=True):
 
     result, val_result = compute_best_test_losses(data, DEFAULT_K, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg \
         else compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], 0, DEFAULT_LOSS)
-    return result, val_result, data, cluster_sizes_list, trial_stats
+    return result, val_result, data, cluster_sizes_list, kq_list
 
 
 def schedule_linear(first, last, n):
@@ -143,6 +143,7 @@ def knas(algo_params, search_space, mp, cfg, control):
     # run nas algorithm
     global GLOBAL_QUERY
     GLOBAL_QUERY = algo_params['total_queries']
+    kq_list = []
 
     n_iterations = cfg['iterations']
     total_q = algo_params['total_queries']
@@ -193,6 +194,7 @@ def knas(algo_params, search_space, mp, cfg, control):
         ps['total_queries'] = q
         ps['global_queries'] = cfg['global_queries']
         print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
+        kq_list.append((k, q))
         start_query = cfg['total_queries'] - GLOBAL_QUERY
         if algo_name == 'random':
             data = random_search(search_space, **ps)
