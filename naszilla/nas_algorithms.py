@@ -127,8 +127,7 @@ class PermutationsController:
         self.search_space = search_space
 
     def I(self, digits, base):
-        return np.sum(digits[::-1].astype(np.float64) * ((base.astype(np.float64)) ** (np.arange(digits.size) - base).astype(np.float64)))
-
+        return 0
     def insert_iteration(self):
         if len(self.search_space) < 1 * self.alpha_size:
             return
@@ -219,7 +218,7 @@ def knas(algo_params, search_space, mp, cfg, control):
         ps['total_queries'] = q
         ps['global_queries'] = cfg['global_queries']
         print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
-        start_query = GLOBAL_QUERY
+        start_query = cfg['total_queries'] - GLOBAL_QUERY
         if algo_name == 'random':
             data = random_search(search_space, **ps)
         elif algo_name == 'evolution':
@@ -330,7 +329,7 @@ def evolution_search(search_space,
     global GLOBAL_QUERY
 
     while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
-
+        print(f'In evolution. query = {query}| total_queries = {total_queries}, GLOBAL_QUERY = {GLOBAL_QUERY}')
         # evolve the population by mutating the best architecture
         # from a random subset of the population
         sample = np.random.choice(population, tournament_size)

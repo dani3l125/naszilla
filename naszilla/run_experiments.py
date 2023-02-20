@@ -199,8 +199,6 @@ def run_experiments(args, save_dir):
         ax2.legend()
         plt.savefig('plots/{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method))
 
-        print(f'\n%%%%%%%%%%%%%%\nTrial I distance statistics: {trial_stats_dict}\n%%%%%%%%%%%%%%\n')
-
 
 def main(args):
     # make save directory
