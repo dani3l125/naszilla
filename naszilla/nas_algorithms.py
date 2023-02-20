@@ -195,7 +195,7 @@ def knas(algo_params, search_space, mp, cfg, control):
         ps['global_queries'] = cfg['global_queries']
         print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
         kq_list.append((k, q))
-        start_query = cfg['total_queries'] - GLOBAL_QUERY
+        start_query = ps['total_queries'] - GLOBAL_QUERY
         if algo_name == 'random':
             data = random_search(search_space, **ps)
         elif algo_name == 'evolution':

@@ -38,12 +38,11 @@ def run_experiments(args, save_dir):
     # read configuration
     cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
 
-    # for compression_method in ['k_means_coreset_orig_dist', 'k_means_coreset', 'uniform', 'k_medoids']:
-    for compression_method in ['k_means_coreset_orig_dist']:
+    def run_and_save(compression_method):
         # manager = multiprocessing.Manager()
         algorithm_results = {}
         algorithm_val_results = {}
-        kq_lists_dict = {}
+        kq_lists = []
         results = {}
         val_results = {}
         walltimes = {}
@@ -92,7 +91,7 @@ def run_experiments(args, save_dir):
             results[algorithm_params[j]['algo_name']][i] = result
             val_results[algorithm_params[j]['algo_name']][i] = val_result
             run_data[algorithm_params[j]['algo_name']][i] = run_datum
-            kq_lists_dict[algorithm_params[j]['algo_name']][i] = kq_list
+            kq_lists.append(np.array(kq_list))
 
         for j in range(num_algos):
 
@@ -100,7 +99,6 @@ def run_experiments(args, save_dir):
             results[algorithm_params[j]['algo_name']] = {}
             val_results[algorithm_params[j]['algo_name']] = {}
             run_data[algorithm_params[j]['algo_name']] = {}
-            kq_lists_dict[algorithm_params[j]['algo_name']] = {}
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
             for i in range(trials):
@@ -198,6 +196,7 @@ def run_experiments(args, save_dir):
         ax1.legend()
         ax2.legend()
         plt.savefig('plots/{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method))
+
 
 
 def main(args):
