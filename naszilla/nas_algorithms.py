@@ -127,37 +127,12 @@ class PermutationsController:
         self.search_space = search_space
 
     def I(self, digits, base):
-        return 0
+        return 1
     def insert_iteration(self):
         if len(self.search_space) < 1 * self.alpha_size:
             return
-
-        evaluated_indexes_array = np.array(self.search_space.old_nasbench.evaluated_indexes)
-        clusters_num = self.search_space.labels.max() + 1
-
-        # Labels to best cluster mapping:
-        clusters_best_values = -1 * np.ones((clusters_num,))
-        for label in range(clusters_num):
-
-            clusters_best_values[label] = self.acc_values[evaluated_indexes_array
-            [np.argwhere(self.search_space.labels == label)]].max()
-        increasing_ordered_labels = np.argsort(clusters_best_values)
-        mapping = np.zeros((clusters_num, ))
-        np.put(mapping, increasing_ordered_labels, np.arange(clusters_num))
-
-        # Labels of best archs in space:
-        best_archs_labels = self.search_space.labels[np.argsort([evaluated_indexes_array])[::-1]][
-                            :self.alpha_size]
-        # I_A, I_R computation:
-        I_A = self.I(mapping[best_archs_labels], clusters_num)
-        I_R = self.I(
-            mapping[np.argsort(self.acc_values[evaluated_indexes_array[self.search_space.coreset_indexes]])[::-1]],
-            clusters_num)
-
-        d = ((I_A - I_R) / I_A).astype(np.float32)
-
         # Update statistics:
-        self.trial.append(d)
+        self.trial.append(1)
         print(self.trial)
 
 
