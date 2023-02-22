@@ -299,11 +299,12 @@ def evolution_search(search_space,
     losses = [d[loss] for d in data]
     query = num_init
     population = [i for i in range(min(num_init, population_size))]
-    last_5_loss = None
-    early_stop = 0
-    global GLOBAL_QUERY
+    # last_5_loss = None
+    # early_stop = 0
+    #global GLOBAL_QUERY
 
-    while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
+    #while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
+    while query <= total_queries
         print(f'In evolution. query = {query}| total_queries = {total_queries}, GLOBAL_QUERY = {GLOBAL_QUERY}')
         # evolve the population by mutating the best architecture
         # from a random subset of the population
@@ -336,17 +337,17 @@ def evolution_search(search_space,
         if verbose and (query % k == 0):
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
             print('evolution, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
-            if top_5_loss == last_5_loss:
-                early_stop += 1
-            else:
-                early_stop = 0
-            if early_stop == 2:
-                print("Breaking while loop")
-                query += 1
-                break
-            last_5_loss = top_5_loss
+            # if top_5_loss == last_5_loss:
+            #     early_stop += 1
+            # else:
+            #     early_stop = 0
+            # if early_stop == 2 and global_queries:
+            #     print("Breaking while loop")
+            #     query += 1
+            #     break
+            # last_5_loss = top_5_loss
         query += 1
-    GLOBAL_QUERY -= query
+    # GLOBAL_QUERY -= query
     return data
 
 
@@ -382,11 +383,12 @@ def bananas(search_space,
                                                 cutoff=cutoff)
 
     query = num_init + k
-    last_5_loss = None
-    early_stop = 0
-    global GLOBAL_QUERY
+    # last_5_loss = None
+    # early_stop = 0
+    # global GLOBAL_QUERY
 
-    while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
+    # while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
+    while query <= total_queries
 
         xtrain = np.array([d['encoding'] for d in data])
         ytrain = np.array([d[loss] for d in data])
@@ -487,17 +489,17 @@ def bananas(search_space,
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
             
             print('evolution, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
-            if top_5_loss == last_5_loss:
-                early_stop+=1
-            else:
-                early_stop=0
-            if early_stop == 2:
-                print("Breaking while loop")
-                query += k
-                break
-            last_5_loss = top_5_loss
+            # if top_5_loss == last_5_loss:
+            #     early_stop+=1
+            # else:
+            #     early_stop=0
+            # if early_stop == 2:
+            #     print("Breaking while loop")
+            #     query += k
+            #     break
+            # last_5_loss = top_5_loss
         query += k
-    GLOBAL_QUERY -= query
+    # GLOBAL_QUERY -= query
 
     return data
 
