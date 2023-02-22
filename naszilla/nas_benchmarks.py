@@ -510,6 +510,7 @@ class KNasbench201(Nasbench201):
         self.cluster_sizes = None
         self.points_alg = points_alg
         self.compression_method = compression_method
+        self.compression_kwargs = compression_args
         if isinstance(self.compression_kwargs['k'], list):
             self.k_for_coreset = self.compression_kwargs['k']
         else:
