@@ -510,12 +510,10 @@ class KNasbench201(Nasbench201):
         self.cluster_sizes = None
         self.points_alg = points_alg
         self.compression_method = compression_method
-        if self.compression_method == 'k_means_coreset' or self.compression_method == 'k_means_coreset_orig_dist':
-            self.compression_kwargs = compression_args
-            if isinstance(self.compression_kwargs['k'], list):
-                self.k_for_coreset = self.compression_kwargs['k']
-            else:
-                self.k_for_coreset = np.ones([50]) * self.compression_kwargs['k']
+        if isinstance(self.compression_kwargs['k'], list):
+            self.k_for_coreset = self.compression_kwargs['k']
+        else:
+            self.k_for_coreset = np.ones([50]) * self.compression_kwargs['k']
 
         self.labels = np.zeros(len(self.nasbench))
 
@@ -605,8 +603,6 @@ class KNasbench201(Nasbench201):
 
         dist_matrix = np.array(self.distances[np.array(self.nasbench.evaluated_indexes)].T[
             np.array(self.nasbench.evaluated_indexes)], dtype=np.float16)
-
-        self.points_alg == 'icba'
 
         if self.points_alg == 'evd':
             m_row = np.tile(dist_matrix[0] ** 2, (dist_matrix.shape[0], 1))
@@ -747,24 +743,30 @@ class KNasbench201(Nasbench201):
             self.labels = kmedoids.labels_
             self.coreset_indexes = kmedoids.medoid_indices_
 
-        elif self.compression_method == 'k_means_coreset':
+        elif self.compression_method == 'k_centers_coreset_geometric':
             if self.compression_kwargs['k_ratio']:
                 self.compression_kwargs['k'] = int(len(self.nasbench) * self.compression_kwargs['k_ratio'])
             else:
                 self.compression_kwargs['k'] = self.k_for_coreset[iteration]
+            self.compression_kwargs['r'] = 2
+            self.compression_kwargs['sum_to_max'] = 1
             self.coreset_indexes, self.labels = knas_coreset(
                 self.points, None, **self.compression_kwargs)
             k = self.coreset_indexes.shape[0]
 
-        elif self.compression_method == 'k_means_coreset_orig_dist':
+
+        elif self.compression_method in ['k_means_coreset', 'k_medians_coreset', 'k_centers_coreset']:
             if self.compression_kwargs['k_ratio']:
                 self.compression_kwargs['k'] = int(len(self.nasbench) * self.compression_kwargs['k_ratio'])
             else:
                 self.compression_kwargs['k'] = self.k_for_coreset[iteration]
+                self.compression_kwargs['r'] = 1 if self.compression_method == 'k_medians_coreset' else 2
+                self.compression_kwargs['sum_to_max'] = 1 if self.compression_method == 'k_centers_coreset' else 0
                 self.coreset_indexes, self.labels = knas_coreset(
                 self.points, self.distances[self.nasbench.evaluated_indexes][:, self.nasbench.evaluated_indexes],
                 **self.compression_kwargs)
             k = self.coreset_indexes.shape[0]
+
         else:
             raise NotImplementedError('Invalid compression type')
         # self.parallel_remove(remove_indices)

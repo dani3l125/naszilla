@@ -1,10 +1,10 @@
-iterations: 4
+iterations: 3
 
 distance: 'path'  # Choose: real, lev, adj, path, nasbot
 
 threads: 16
 
-compression_method: 'k_means_coreset_orig_dist' # k_means_coreset, k_medoids
+compression_method: 'k_centers_coreset' # k_centers_coreset_geometric, k_medians_coreset, k_means_coreset, k_medoids, uniform
 
 qAutofill: True
 
@@ -36,7 +36,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'i4_m2_ciss1_k100_r2_path'
+figName: 'i4_m2_ciss1_k100_r2_path_global'
 
 
 

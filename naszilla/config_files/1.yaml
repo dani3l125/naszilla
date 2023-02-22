@@ -1,14 +1,14 @@
-iterations: 4
+iterations: 3
 
 distance: 'path'  # Choose: real, lev, adj, path, nasbot
 
 threads: 16
 
-compression_method: 'k_means_coreset_orig_dist' # k_means_coreset, k_medoids
+compression_method: 'k_centers_coreset' # k_centers_coreset_geometric, k_medians_coreset, k_means_coreset, k_medoids, uniform
 
 qAutofill: True
 
-global_queries: True
+global_queries: False
 
 manual_schedulers: False
 

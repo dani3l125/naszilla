@@ -143,7 +143,7 @@ def knas(algo_params, search_space, mp, cfg, control):
     # run nas algorithm
     global GLOBAL_QUERY
     GLOBAL_QUERY = algo_params['total_queries']
-    kq_list = []
+    kq_list = ([],[])
 
     n_iterations = cfg['iterations']
     total_q = algo_params['total_queries']
@@ -194,7 +194,8 @@ def knas(algo_params, search_space, mp, cfg, control):
         ps['total_queries'] = q
         ps['global_queries'] = cfg['global_queries']
         print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
-        kq_list.append((k, q))
+        kq_list[0].append(k)
+        kq_list[1].append(q)
         start_query = ps['total_queries'] - GLOBAL_QUERY
         if algo_name == 'random':
             data = random_search(search_space, **ps)
@@ -219,17 +220,14 @@ def knas(algo_params, search_space, mp, cfg, control):
 
         if k != -1:  # efficiency
             search_space.choose_clusters(data, int(m))
-        elif control:
-            return final_data, controller.trial
         else:
-            return final_data, []
+            break
         space_size = len(search_space)
 
-    if control:
-        return final_data, controller.trial
-
-    else:
-        return final_data, []
+    while len(kq_list[0]) < cfg['iterations']:
+        kq_list[0].append(-1)
+        kq_list[1].append(0)
+    return final_data, kq_list
 
 
 def compute_best_test_losses(data, k, total_queries, start_query, loss):

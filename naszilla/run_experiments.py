@@ -10,8 +10,6 @@ import yaml
 import threading
 import multiprocessing
 from cycler import cycler
-import matplotlib.pyplot as plt
-
 from naszilla.params import *
 from naszilla.nas_benchmarks import Nasbench101, Nasbench201, Nasbench301, KNasbench201
 from naszilla.nas_algorithms import run_nas_algorithm
@@ -39,10 +37,12 @@ def run_experiments(args, save_dir):
     cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
 
     def run_and_save(compression_method):
+        cfg['compression_method'] = compression_method
         # manager = multiprocessing.Manager()
         algorithm_results = {}
         algorithm_val_results = {}
-        kq_lists = []
+        k_lists = []
+        q_lists = []
         results = {}
         val_results = {}
         walltimes = {}
@@ -91,7 +91,8 @@ def run_experiments(args, save_dir):
             results[algorithm_params[j]['algo_name']][i] = result
             val_results[algorithm_params[j]['algo_name']][i] = val_result
             run_data[algorithm_params[j]['algo_name']][i] = run_datum
-            kq_lists.append(np.array(kq_list))
+            k_lists.append(np.array(kq_list[0]))
+            q_lists.append(np.array(kq_list[1]))
 
         for j in range(num_algos):
 
@@ -150,37 +151,13 @@ def run_experiments(args, save_dir):
                 pickle.dump([algorithm_params, metann_params, results, tmp_walltimes, tmp_run_data, val_results], f)
                 f.close()
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4.5), tight_layout=True)
-        custom_cycler = cycler(color=['r', 'r', 'r', 'g', 'g', 'g', 'b','b', 'b', 'y', 'y', 'y'])
-        ax1.set_xlabel('Queries')
-        ax1.set_ylabel('Best train accuracy')
-        ax2.set_xlabel('Queries')
-        ax2.set_ylabel('Best validation accuracy')
-        ax1.set_prop_cycle(custom_cycler)
-        ax2.set_prop_cycle(custom_cycler)
-        def inverse(x):
-            return x
-        def forward(x):
-            return x
-        ax1.set_yscale('function', functions=(forward, inverse))
-        ax2.set_yscale('function', functions=(forward, inverse))
         if not os.path.exists('plots'):
             os.makedirs('plots')
         if not os.path.exists('plots/src_data'):
             os.makedirs('plots/src_data')
         for algo_name in algorithm_results.keys():
-            sota_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}.npy')
-            sota_val_result = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_val.npy')
             result = 100 - algorithm_results[algo_name][0]
             val_result = 100 - algorithm_val_results[algo_name][0]
-            ax1.plot(np.arange(10, 301, 10), sota_result, 'o-', label=label_mapping[algo_name]+', SOTA')
-            ax1.plot(np.arange(10, 301, 10), result[9::10], '^-', label=label_mapping[algo_name] + ', ours')
-            ax1.errorbar(x=np.arange(1, 301, 1), y=result, yerr=algorithm_results[algo_name][1],
-                         fmt='-', errorevery=10)
-            ax2.plot(np.arange(10, 301, 10), sota_val_result, 'o-', label=label_mapping[algo_name]+', SOTA')
-            ax2.plot(np.arange(10, 301, 10), val_result[9::10], '^-', label=label_mapping[algo_name]+', ours')
-            ax2.errorbar(x=np.arange(1, 301, 1), y=val_result, yerr=algorithm_val_results[algo_name][1],
-                         fmt='-', errorevery=10)
             np.save(
                 'plots/src_data/{}_{}_{}_{}_val_mean'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 val_result)
@@ -193,9 +170,16 @@ def run_experiments(args, save_dir):
             np.save(
                 'plots/src_data/{}_{}_{}_{}_std'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 algorithm_results[algo_name][1])
-        ax1.legend()
-        ax2.legend()
-        plt.savefig('plots/{}_{}_{}.png'.format(cfg['figName'], args.dataset, compression_method))
+
+        return np.average(k_lists, axis=0).astype(int), np.average(q_lists, axis=0).astype(int)
+
+    k_list, q_list = run_and_save('k_centers_coreset')
+
+    if args.study:
+        cfg['kScheduler']['type'] = 'manual'
+        cfg['kScheduler']['manual'] = k_list
+        for compression_method in ['k_centers_coreset_geometric', 'k_medians_coreset', 'k_means_coreset', 'k_medoids', 'uniform']:
+            run_and_save(compression_method)
 
 
 
@@ -242,6 +226,7 @@ if __name__ == "__main__":
     parser.add_argument('--k_alg', type=int, default=0, help='use iterative k algorithm')
     parser.add_argument('--sample_size_graphs', type=int, default=0, help='plot graphs with coreset size independent variable')
     parser.add_argument('--k_graphs', type=int, default=0, help='plot graphs with coreset size independent variable')
+    parser.add_argument('--study', type=int, default=0, help='ablation study graphs')
     parser.add_argument('--cfg', type=str, default='/home/daniel/naszilla/naszilla/knas_config.yaml',
                         help='path to configuration file')
 
