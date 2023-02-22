@@ -2,7 +2,7 @@
 
 TRIALS=1
 
-let NTHREADS=$TRIALS*2*3+4
+let NTHREADS=$TRIALS*8
 for i in 1 2
 do
 #  screen -L -Logfile cifar10_exp$i -S cifar10_exp$i -dm srun --mincpus=$NTHREADS\

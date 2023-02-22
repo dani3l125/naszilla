@@ -1,4 +1,4 @@
-iterations: 3
+iterations: 4
 
 distance: 'path'  # Choose: real, lev, adj, path, nasbot
 
