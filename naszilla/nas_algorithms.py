@@ -213,7 +213,7 @@ def knas(algo_params, search_space, mp, cfg, control):
             print('Invalid algorithm name')
             raise NotImplementedError()
         final_data.extend(data)
-        queries = ps['total_queries'] if cfg['global_queries'] else (cfg['total_queries'] - GLOBAL_QUERY)
+        queries = ps['total_queries'] if cfg['global_queries'] else (ps['total_queries'] - GLOBAL_QUERY)
         result, val_result = compute_best_test_losses(data, DEFAULT_K, queries, start_query, DEFAULT_LOSS)
         print(f'\n Result: {val_result} Optimal: {search_space.get_best_arch_loss()}\n#####')
         q_sum += q
