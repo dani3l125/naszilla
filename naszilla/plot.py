@@ -8,7 +8,9 @@ import yaml
 from cycler import cycler
 import matplotlib.pyplot as plt
 
-label_mapping = {'bananas': 'BANANAS', 'local_search': 'Local search', 'evolution': 'Evolutionary search',
+# label_mapping = {'bananas': 'BANANAS', 'local_search': 'Local search', 'evolution': 'Evolutionary search',
+#                  'random': 'Random search'}
+label_mapping = {'local_search': 'Local search', 'evolution': 'Evolutionary search',
                  'random': 'Random search'}
 
 all_algs = ['k_centers_coreset', 'k_centers_coreset_geometric', 'k_medians_coreset', 'k_means_coreset', 'k_medoids',
@@ -52,10 +54,10 @@ def plot_experiments(args):
                 raise Exception("No source data")
             if not args.study:
                 color = next(cycle)['color']
-                sota_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean_npy.npy')
-                sota_val_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean_npy_val.npy')
-                sota_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std_npy.npy')
-                sota_val_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std_npy_val.npy')
+                sota_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean.npy')
+                sota_val_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean_val.npy')
+                sota_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std.npy')
+                sota_val_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std_val.npy')
                 ax1.errorbar(np.arange(args.first, args.last+1, 25), sota_result_mean[args.first - 1:args.last:25],
                              yerr=sota_result_std[args.first - 1:args.last:25], fmt='*',
                              label=f'NASBoost + {label_mapping[algo_name]}',  color=color)
@@ -89,7 +91,7 @@ def plot_experiments(args):
             ax1.errorbar(np.arange(args.first, args.last+1, 25), result_mean[args.first - 1:args.last:25],
                          yerr=result_std[args.first - 1:args.last:25], fmt='*',
                          label=f'NASBoost + {label_mapping[algo_name]}')
-            ax1.plot(np.arange(args.first, args.last+1), val_result_mean[args.first - 1:args.last], '-',
+            ax1.plot(np.arange(args.first, args.last+1), result_mean[args.first - 1:args.last], '-',
                      color=color)
 
             ax2.errorbar(np.arange(args.first, args.last+1, 25), val_result_mean[args.first - 1:args.last:25],
@@ -100,6 +102,7 @@ def plot_experiments(args):
 
         ax1.legend()
         ax2.legend()
+        plt.grid()
         plt.savefig(
             'plots/{}_{}_{}_{}_{}.png'.format(cfg['figName'], args.dataset, algo_name, 'ablation' if args.study else '',
                                               f'query{args.first}to{args.last}'))
