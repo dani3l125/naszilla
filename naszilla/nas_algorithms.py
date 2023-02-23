@@ -305,7 +305,6 @@ def evolution_search(search_space,
 
     #while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
     while query <= total_queries:
-        print(f'In evolution. query = {query}| total_queries = {total_queries}, GLOBAL_QUERY = {GLOBAL_QUERY}')
         # evolve the population by mutating the best architecture
         # from a random subset of the population
         sample = np.random.choice(population, tournament_size)
@@ -488,7 +487,7 @@ def bananas(search_space,
         if verbose:
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
             
-            print('evolution, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
+            print('bananas, query {}, top 5 losses in current iteration {}'.format(query, top_5_loss))
             # if top_5_loss == last_5_loss:
             #     early_stop+=1
             # else:

@@ -30,7 +30,7 @@ def plot_experiments(args):
         compress_algs = all_algs
         color_list = ['r', 'g', 'b', 'y', 'c', 'm']
     else:
-        compress_algs = ['k_means_coreset_orig_dist']
+        compress_algs = ['k_centers_coreset']
         color_list = ['r', 'g']
 
     for algo_name in label_mapping.keys():
@@ -52,21 +52,21 @@ def plot_experiments(args):
                 raise Exception("No source data")
             if not args.study:
                 color = next(cycle)['color']
-                sota_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean.npy')
-                sota_val_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean_val.npy')
-                sota_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std.npy')
-                sota_val_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std_val.npy')
+                sota_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean_npy.npy')
+                sota_val_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean_npy_val.npy')
+                sota_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std_npy.npy')
+                sota_val_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std_npy_val.npy')
                 ax1.errorbar(np.arange(args.first, args.last+1, 25), sota_result_mean[args.first - 1:args.last:25],
                              yerr=sota_result_std[args.first - 1:args.last:25], fmt='*',
-                             label=f'NASBoost + {label_mapping[algo_name]}', ecolor=color, color=color)
-                ax1.plot(np.arange(args.first, args.last+1), sota_val_result_mean[args.first - 1:args.last], '-',
-                         ecolor=color, color=color)
+                             label=f'NASBoost + {label_mapping[algo_name]}',  color=color)
+                ax1.plot(np.arange(args.first, args.last+1), sota_result_mean[args.first - 1:args.last], '-',
+                          color=color)
 
                 ax2.errorbar(np.arange(args.first, args.last+1, 25), sota_val_result_mean[args.first - 1:args.last:25],
                              yerr=sota_val_result_std[args.first - 1:args.last:25], fmt='*',
-                             label=f'NASBoost of {label_mapping[algo_name]}', ecolor=color, color=color)
+                             label=f'NASBoost of {label_mapping[algo_name]}',  color=color)
                 ax2.plot(np.arange(args.first, args.last+1), sota_val_result_mean[args.first - 1:args.last], '-',
-                         ecolor=color, color=color)
+                          color=color)
 
             if not os.path.exists(
                     'plots/src_data/{}_{}_{}_{}_mean.npy'.format(cfg['figName'], args.dataset, compression_method,
@@ -89,13 +89,13 @@ def plot_experiments(args):
             ax1.errorbar(np.arange(args.first, args.last+1, 25), result_mean[args.first - 1:args.last:25],
                          yerr=result_std[args.first - 1:args.last:25], fmt='*',
                          label=f'NASBoost + {label_mapping[algo_name]}')
-            ax1.plot(np.arange(args.first, args.last+1), val_result_mean[args.first - 1:args.last], '-', ecolor=color,
+            ax1.plot(np.arange(args.first, args.last+1), val_result_mean[args.first - 1:args.last], '-',
                      color=color)
 
             ax2.errorbar(np.arange(args.first, args.last+1, 25), val_result_mean[args.first - 1:args.last:25],
                          yerr=val_result_std[args.first - 1:args.last:25], fmt='*',
-                         label=f'NASBoost of {label_mapping[algo_name]}', ecolor=color, color=color)
-            ax2.plot(np.arange(args.first, args.last+1), val_result_mean[args.first - 1:args.last], '-', ecolor=color,
+                         label=f'NASBoost of {label_mapping[algo_name]}',  color=color)
+            ax2.plot(np.arange(args.first, args.last+1), val_result_mean[args.first - 1:args.last], '-',
                      color=color)
 
         ax1.legend()
