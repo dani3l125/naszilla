@@ -16,7 +16,7 @@ from naszilla.nas_algorithms import run_nas_algorithm
 
 def run_experiments(args, save_dir):
     # set up arguments
-    trials = 10
+    trials = 15
     queries = args.queries
     out_file = args.output_filename
     save_specs = args.save_specs
