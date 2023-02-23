@@ -16,7 +16,7 @@ from naszilla.nas_algorithms import run_nas_algorithm
 
 def run_experiments(args, save_dir):
     # set up arguments
-    trials = args.trials
+    trials = 10
     queries = args.queries
     out_file = args.output_filename
     save_specs = args.save_specs
@@ -30,8 +30,13 @@ def run_experiments(args, save_dir):
 
     # set up search space
     mp = copy.deepcopy(metann_params)
-
     # read configuration
+
+    results = []
+    val_results = []
+    walltimes = []
+    run_data = []
+
     cfg = yaml.safe_load(open(args.cfg, 'r')) if args.k_alg else None
 
     for i in range(trials):
@@ -54,11 +59,6 @@ def run_experiments(args, save_dir):
         else:
             print('Invalid search space')
             raise NotImplementedError()
-
-        results = []
-        val_results = []
-        walltimes = []
-        run_data = []
 
         for j in range(num_algos):
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
@@ -112,8 +112,8 @@ def run_experiments(args, save_dir):
             result_std_val = np.add(result_std_val, np.abs(result.T[1] - result_mean_val))
         result_std_val /= len(results)
         if args.save_sota:
-            np.save(f'sota_results/{args.algo_params}_{args.dataset}_mean_val.npy', result_mean)
-            np.save(f'sota_results/{args.algo_params}_{args.dataset}_std_val.npy', result_std)
+            np.save(f'sota_results/{args.algo_params}_{args.dataset}_mean.npy', result_mean)
+            np.save(f'sota_results/{args.algo_params}_{args.dataset}_std.npy', result_std)
             np.save(f'sota_results/{args.algo_params}_{args.dataset}_mean_val.npy', result_mean_val)
             np.save(f'sota_results/{args.algo_params}_{args.dataset}_std_val.npy', result_std_val)
 
