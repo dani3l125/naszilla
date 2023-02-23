@@ -14,7 +14,7 @@ label_mapping = {'local_search': 'Local search', 'evolution': 'Evolutionary sear
                  'random': 'Random search'}
 
 all_algs_mapping = {'k_centers_coreset': 'Coreset for k centers',
-                    'k_centers_coreset_geometric': 'Coreset for k centers with geometric mapping',
+                    #'k_centers_coreset_geometric': 'Coreset for k centers with geometric mapping',
                     'k_medians_coreset': 'Coreset for k medians', 'k_means_coreset': 'Coreset for k means',
                     'k_medoids': 'k medoids',
                     'uniform': 'Uniform sampling'}
@@ -41,35 +41,34 @@ def plot_experiments(args):
     for algo_name in label_mapping.keys():
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4.5), tight_layout=True)
         plt.title(label_mapping[algo_name])
+        custom_cycler = cycler(color=color_list)
+        cycle = custom_cycler()
+        ax1.set_xlabel('Queries')
+        ax1.set_ylabel('Best train accuracy')
+        ax2.set_xlabel('Queries')
+        ax2.set_ylabel('Best validation accuracy')
+        ax1.set_yscale('function', functions=(forward, inverse))
+        ax2.set_yscale('function', functions=(forward, inverse))
 
         for compression_method in compress_algs:
 
-            custom_cycler = cycler(color=color_list)
-            cycle = custom_cycler()
-            ax1.set_xlabel('Queries')
-            ax1.set_ylabel('Best train accuracy')
-            ax2.set_xlabel('Queries')
-            ax2.set_ylabel('Best validation accuracy')
-
-            ax1.set_yscale('function', functions=(forward, inverse))
-            ax2.set_yscale('function', functions=(forward, inverse))
             if not os.path.exists('plots/src_data'):
                 raise Exception("No source data")
             if not args.study:
                 color = next(cycle)['color']
-                # sota_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean.npy')
+                sota_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean.npy')
                 sota_val_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean_val.npy')
-                # sota_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std.npy')
+                sota_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std.npy')
                 sota_val_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std_val.npy')
-                # ax1.errorbar(np.arange(args.first, args.last + 1, 25), sota_result_mean[args.first - 1:args.last:25],
-                #              yerr=sota_result_std[args.first - 1:args.last:25], fmt='.',
-                #              label=f'{label_mapping[algo_name]}', color=color)
-                # ax1.plot(np.arange(args.first, args.last + 1), sota_result_mean[args.first - 1:args.last], '-',
-                #          color=color)
+                ax1.errorbar(np.arange(args.first, args.last + 1, 25), sota_result_mean[args.first - 1:args.last:25],
+                             yerr=sota_result_std[max(args.first, 10) - 1:args.last:25], fmt='.',
+                             label=f'{label_mapping[algo_name]}', color=color)
+                ax1.plot(np.arange(args.first, args.last + 1), sota_result_mean[args.first - 1:args.last], '-',
+                         color=color)
 
                 ax2.errorbar(np.arange(args.first, args.last + 1, 25),
                              sota_val_result_mean[args.first - 1:args.last:25],
-                             yerr=sota_val_result_std[args.first - 1:args.last:25], fmt='.',
+                             yerr=sota_val_result_std[max(args.first, 10) - 1:args.last:25], fmt='.',
                              label=f'{label_mapping[algo_name]}', color=color)
                 ax2.plot(np.arange(args.first, args.last + 1), sota_val_result_mean[args.first - 1:args.last], '-',
                          color=color)
@@ -93,7 +92,7 @@ def plot_experiments(args):
 
             color = next(cycle)['color']
             ax1.errorbar(np.arange(args.first, args.last + 1, 25), result_mean[args.first - 1:args.last:25],
-                         yerr=result_std[args.first - 1:args.last:25], fmt='.',
+                         yerr=result_std[max(args.first, 10) - 1:args.last:25], fmt='.',
                          label='{} + {}'.format(label_mapping[algo_name],
                                                 'NASBoost' if not args.study else all_algs_mapping[compression_method]),
                          color=color)
@@ -101,7 +100,7 @@ def plot_experiments(args):
                      color=color)
 
             ax2.errorbar(np.arange(args.first, args.last + 1, 25), val_result_mean[args.first - 1:args.last:25],
-                         yerr=val_result_std[args.first - 1:args.last:25], fmt='.',
+                         yerr=val_result_std[max(args.first, 10) - 1:args.last:25], fmt='.',
                          label='{} + {}'.format(label_mapping[algo_name],
                                                 'NASBoost' if not args.study else all_algs_mapping[compression_method]),
                          color=color)
