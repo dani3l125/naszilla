@@ -304,7 +304,7 @@ def evolution_search(search_space,
     #global GLOBAL_QUERY
 
     #while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
-    while query <= total_queries
+    while query <= total_queries:
         print(f'In evolution. query = {query}| total_queries = {total_queries}, GLOBAL_QUERY = {GLOBAL_QUERY}')
         # evolve the population by mutating the best architecture
         # from a random subset of the population
@@ -388,7 +388,7 @@ def bananas(search_space,
     # global GLOBAL_QUERY
 
     # while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
-    while query <= total_queries
+    while query <= total_queries:
 
         xtrain = np.array([d['encoding'] for d in data])
         ytrain = np.array([d[loss] for d in data])
