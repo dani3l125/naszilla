@@ -8,10 +8,10 @@ import yaml
 from cycler import cycler
 import matplotlib.pyplot as plt
 
-# label_mapping = {'bananas': 'BANANAS', 'local_search': 'Local search', 'evolution': 'Evolutionary search',
-#                  'random': 'Random search'}
-label_mapping = {'local_search': 'Local search', 'evolution': 'Evolutionary search',
+label_mapping = {'bananas': 'BANANAS', 'local_search': 'Local search', 'evolution': 'Evolutionary search',
                  'random': 'Random search'}
+# label_mapping = {'local_search': 'Local search', 'evolution': 'Evolutionary search',
+#                  'random': 'Random search'}
 
 all_algs_mapping = {'k_centers_coreset': 'Coreset for k centers',
                     #'k_centers_coreset_geometric': 'Coreset for k centers with geometric mapping',
