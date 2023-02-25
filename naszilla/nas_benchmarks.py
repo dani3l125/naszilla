@@ -775,7 +775,6 @@ class KNasbench201(Nasbench201):
 
         self.labels[self.coreset_indexes] = np.arange(k)
         self.cluster_sizes = np.bincount(self.labels)
-        print(f'Average number of points in cluster: {np.mean(self.cluster_sizes)}')
         # copy_thread.join()
         remove_indices = list(set(self.nasbench.evaluated_indexes) -
                               set(np.array(self.nasbench.evaluated_indexes)[
