@@ -137,8 +137,6 @@ class PermutationsController:
 
 
 def knas(algo_params, search_space, mp, cfg, control):
-    if control:
-        controller = PermutationsController(search_space)
 
     # run nas algorithm
     global GLOBAL_QUERY
@@ -182,8 +180,6 @@ def knas(algo_params, search_space, mp, cfg, control):
         if k != -1:
             # -1 means searching in the final cluster as usual
             k = search_space.prune(i, k)
-            if control:
-                controller.insert_iteration()
             # q = k * total_q / 15624 if k > 50 else min(50, total_q - q_sum)
             # q = total_q // n_iterations
             # q /= 10

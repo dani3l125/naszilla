@@ -203,59 +203,64 @@ class Nasbench:
         """
 
         candidates = []
+        counter = 0
         # set up hash map
-        dic = {}
-        for d in data:
-            arch = d['spec']
-            h = self.get_hash(arch)
-            dic[h] = 1
+        while not len(candidates):
+            counter += 1
+            if counter >= 5:
+                print('Candidates loop reached 5 iterations')
+            dic = {}
+            for d in data:
+                arch = d['spec']
+                h = self.get_hash(arch)
+                dic[h] = 1
 
-        if acq_opt_type not in ['mutation', 'mutation_random', 'random']:
-            print('{} is not yet implemented as an acquisition type'.format(acq_opt_type))
-            raise NotImplementedError()
+            if acq_opt_type not in ['mutation', 'mutation_random', 'random']:
+                print('{} is not yet implemented as an acquisition type'.format(acq_opt_type))
+                raise NotImplementedError()
 
-        if acq_opt_type in ['mutation', 'mutation_random']:
-            # mutate architectures with the lowest loss
-            best_arches = [arch['spec'] for arch in
-                           sorted(data, key=lambda i: i[loss])[:num_arches_to_mutate * patience_factor]]
+            if acq_opt_type in ['mutation', 'mutation_random']:
+                # mutate architectures with the lowest loss
+                best_arches = [arch['spec'] for arch in
+                               sorted(data, key=lambda i: i[loss])[:num_arches_to_mutate * patience_factor]]
 
-            # stop when candidates is size num
-            # use patience_factor instead of a while loop to avoid long or infinite runtime
+                # stop when candidates is size num
+                # use patience_factor instead of a while loop to avoid long or infinite runtime
 
-            for arch in best_arches:
-                if len(candidates) >= num:
-                    break
-                for i in range(int(num / num_arches_to_mutate / max_mutation_rate)):
-                    for rate in range(1, max_mutation_rate + 1):
-                        mutated = self.mutate_arch(arch,
-                                                   mutation_rate=rate,
-                                                   mutate_encoding=mutate_encoding,
-                                                   mutation_tree=mutation_tree)
-                        arch_dict = self.query_arch(mutated,
-                                                    train=train,
-                                                    predictor_encoding=predictor_encoding,
-                                                    deterministic=deterministic_loss,
-                                                    cutoff=cutoff)
-                        h = self.get_hash(mutated)
+                for arch in best_arches:
+                    if len(candidates) >= num:
+                        break
+                    for i in range(int(num / num_arches_to_mutate / max_mutation_rate)):
+                        for rate in range(1, max_mutation_rate + 1):
+                            mutated = self.mutate_arch(arch,
+                                                       mutation_rate=rate,
+                                                       mutate_encoding=mutate_encoding,
+                                                       mutation_tree=mutation_tree)
+                            arch_dict = self.query_arch(mutated,
+                                                        train=train,
+                                                        predictor_encoding=predictor_encoding,
+                                                        deterministic=deterministic_loss,
+                                                        cutoff=cutoff)
+                            h = self.get_hash(mutated)
 
-                        if allow_isomorphisms or h not in dic:
-                            dic[h] = 1
-                            candidates.append(arch_dict)
+                            if allow_isomorphisms or h not in dic:
+                                dic[h] = 1
+                                candidates.append(arch_dict)
 
-        if acq_opt_type in ['random', 'mutation_random']:
-            # add randomly sampled architectures to the set of candidates
-            for _ in range(num * patience_factor):
-                if len(candidates) >= 2 * num:
-                    break
+            if acq_opt_type in ['random', 'mutation_random']:
+                # add randomly sampled architectures to the set of candidates
+                for _ in range(num * patience_factor):
+                    if len(candidates) >= 2 * num:
+                        break
 
-                arch_dict = self.query_arch(train=train,
-                                            predictor_encoding=predictor_encoding,
-                                            cutoff=cutoff)
-                h = self.get_hash(arch_dict['spec'])
+                    arch_dict = self.query_arch(train=train,
+                                                predictor_encoding=predictor_encoding,
+                                                cutoff=cutoff)
+                    h = self.get_hash(arch_dict['spec'])
 
-                if allow_isomorphisms or h not in dic:
-                    dic[h] = 1
-                    candidates.append(arch_dict)
+                    if allow_isomorphisms or h not in dic:
+                        dic[h] = 1
+                        candidates.append(arch_dict)
 
         return candidates
 
@@ -483,7 +488,7 @@ class KNasbench201(Nasbench201):
                  compression_method='k_medoids',
                  compression_args=None,
                  points_alg='evd',
-                 is_debug=False
+                 is_debug=True
                  ):
         super().__init__(dataset, data_folder, version, is_debug=is_debug)
         self._is_updated_distances = False
