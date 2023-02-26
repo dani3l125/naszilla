@@ -37,8 +37,8 @@ class MetaNeuralnet:
                         layer_width,
                         loss,
                         regularization):
-        if not self.model is None:
-            return self.model
+        # if not self.model is None:
+        #     return self.model
         print("###Creating model###")
         input_layer = keras.layers.Input(input_dims)
         model = keras.models.Sequential()
