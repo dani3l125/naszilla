@@ -29,12 +29,17 @@ def mape_loss(y_true, y_pred):
 
 class MetaNeuralnet:
 
+    def __init__(self):
+        self.model = None
     def get_dense_model(self, 
                         input_dims, 
                         num_layers,
                         layer_width,
                         loss,
                         regularization):
+        if not self.model is None:
+            return self.model
+        print("###Creating model###")
         input_layer = keras.layers.Input(input_dims)
         model = keras.models.Sequential()
 
