@@ -207,8 +207,8 @@ class Nasbench:
         # set up hash map
         while len(candidates) == 0:
             counter += 1
-            if counter >= 5:
-                print('Candidates loop reached 5 iterations')
+            if counter >= 2:
+                print('Candidates loop reached decond iteration')
             dic = {}
             for d in data:
                 arch = d['spec']
