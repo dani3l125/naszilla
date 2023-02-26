@@ -21,9 +21,9 @@ do
 #  --algo_params all_algos --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
 #    --dataset cifar100"
 
-  screen -L -Logfile debug_imagenet_exp$i -S imagenet_exp$i -dm srun --gpus=1 --mincpus=$NTHREADS\
+  screen -L -Logfile debug_imagenet_exp$i -S imagenet_exp$i -dm srun --gpus=0 --mincpus=$NTHREADS\
    --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
-   /bin/bash -c "conda install -c conda-forge cudatoolkit=11.2.2 cudnn=8.1.0; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib/; python3 -m pip install tensorflow; export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
+   /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
   cd /dyakovlev/naszilla; printf \"\n\n\n####################\n Experiment $i\n####################\n\n\n\"
   python /dyakovlev/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \\
   --algo_params bananas --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
