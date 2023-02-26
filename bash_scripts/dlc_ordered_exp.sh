@@ -1,8 +1,8 @@
 #!/bin/bash
 
-TRIALS=1
+TRIALS=2
 
-let NTHREADS=$TRIALS*6+4
+let NTHREADS=$TRIALS*2+4
 for i in 1 2
 do
 #  screen -L -Logfile cifar10_exp$i -S cifar10_exp$i -dm srun --mincpus=$NTHREADS\
