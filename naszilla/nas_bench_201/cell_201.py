@@ -42,7 +42,6 @@ class Cell201:
         From the AutoDL-Projects repository
         """
         if len(nasbench) != 15625: #  k-medoids, choice should be from substet
-            print(f'In random cell, len = {len(nasbench)}')
             return {'string':random.choice(nasbench.meta_archs)}
         ops = []
         for i in range(OP_SPOTS):
