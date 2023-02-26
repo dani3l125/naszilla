@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TRIALS=3
+TRIALS=4
 
 let NTHREADS=$TRIALS*2+4
 for i in 1 2
@@ -26,16 +26,16 @@ do
    /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
   cd /dyakovlev/naszilla; printf \"\n\n\n####################\n Experiment $i\n####################\n\n\n\"
   python /dyakovlev/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \\
-  --algo_params bananas --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
+  --algo_params local_search --queries 300 --trials $TRIALS --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
     --dataset ImageNet16-120"
 
-    screen -L -Logfile single_debug_imagenet_exp$i -S imagenet_exp$i -dm srun --gpus=1 --mincpus=$NTHREADS\
-   --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
-   /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
-  cd /dyakovlev/naszilla; printf \"\n\n\n####################\n Experiment $i\n####################\n\n\n\"
-  python /dyakovlev/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \\
-  --algo_params bananas --queries 300 --trials 1 --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
-    --dataset ImageNet16-120"
+#    screen -L -Logfile single_debug_imagenet_exp$i -S imagenet_exp$i -dm srun --gpus=1 --mincpus=$NTHREADS\
+#   --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
+#   /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
+#  cd /dyakovlev/naszilla; printf \"\n\n\n####################\n Experiment $i\n####################\n\n\n\"
+#  python /dyakovlev/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \\
+#  --algo_params local_search --queries 300 --trials 1 --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\\
+#    --dataset ImageNet16-120"
 
 #  python /dyakovlev/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \
 #  --algo_params random --queries 300 --trials 5 --k_alg 1 --cfg /dyakovlev/naszilla/naszilla/config_files/$i.yaml\
