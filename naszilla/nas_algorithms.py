@@ -20,7 +20,7 @@ from nas_benchmarks import MutationTree
 
 # default parameters for the NAS algorithms
 DEFAULT_NUM_INIT = 10
-DEFAULT_K = 1
+DEFAULT_K = 10
 DEFAULT_TOTAL_QUERIES = 150
 DEFAULT_LOSS = 'val_loss'
 SIG_DONE = True
@@ -77,8 +77,8 @@ def run_nas_algorithm(algo_params, search_space, mp, k_alg, cfg, control=True):
     if 'loss' not in ps:
         ps['loss'] = DEFAULT_LOSS
 
-    result, val_result = compute_best_test_losses(data, DEFAULT_K, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg \
-        else compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], 0, DEFAULT_LOSS)
+    result, val_result = compute_best_test_losses(data, 1, algo_params['total_queries'], 0, DEFAULT_LOSS) if k_alg \
+        else compute_best_test_losses(data, 1, ps['total_queries'], 0, DEFAULT_LOSS)
     return result, val_result, data, cluster_sizes_list, kq_list
 
 
@@ -225,7 +225,7 @@ def knas(algo_params, search_space, mp, cfg, control):
             print('Invalid algorithm name')
             raise NotImplementedError()
         final_data.extend(data)
-        result, val_result = compute_best_test_losses(data, DEFAULT_K, ps['total_queries'], q_sum, DEFAULT_LOSS)
+        result, val_result = compute_best_test_losses(data, 1, ps['total_queries'], q_sum, DEFAULT_LOSS)
         print(f'\n Result: {val_result} Optimal: {search_space.get_best_arch_loss()}\n#####')
         q_sum += q
 
