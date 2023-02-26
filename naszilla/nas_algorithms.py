@@ -434,7 +434,7 @@ def bananas(search_space,
                     meta_neuralnet = MetaNeuralnet()
                 net_params = metann_params['ensemble_params'][e]
 
-                print(f'Before fit. i = {i}, xtrain = {xtrain}, ytrain = {ytrain}')
+                print(f'Before fit. i = {i}, #candidates = {len(candidates)}')
                 train_error += meta_neuralnet.fit(xtrain, ytrain, **net_params)
 
                 # predict the validation loss of the candidate architectures

@@ -205,7 +205,7 @@ class Nasbench:
         candidates = []
         counter = 0
         # set up hash map
-        while not len(candidates):
+        while len(candidates) == 0:
             counter += 1
             if counter >= 5:
                 print('Candidates loop reached 5 iterations')
