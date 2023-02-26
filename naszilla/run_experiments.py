@@ -173,8 +173,8 @@ def run_experiments(args, save_dir):
 
         return np.average(k_lists, axis=0).astype(int), np.average(q_lists, axis=0).astype(int)
 
-    # k_list, q_list = run_and_save('k_centers_coreset')
-    k_list, q_list = run_and_save('uniform')
+    k_list, q_list = run_and_save('k_centers_coreset')
+    # k_list, q_list = run_and_save('uniform')
     if args.study:
         cfg['kScheduler']['type'] = 'manual'
         cfg['kScheduler']['manual'] = k_list
