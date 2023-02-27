@@ -128,6 +128,7 @@ class PermutationsController:
 
     def I(self, digits, base):
         return 1
+
     def insert_iteration(self):
         if len(self.search_space) < 1 * self.alpha_size:
             return
@@ -137,11 +138,10 @@ class PermutationsController:
 
 
 def knas(algo_params, search_space, mp, cfg, control):
-
     # run nas algorithm
     global GLOBAL_QUERY
     GLOBAL_QUERY = algo_params['total_queries']
-    kq_list = ([],[])
+    kq_list = ([], [])
 
     n_iterations = cfg['iterations']
     total_q = algo_params['total_queries']
@@ -202,7 +202,7 @@ def knas(algo_params, search_space, mp, cfg, control):
             data = evolution_search(search_space, **ps,
                                     mutation_tree=MutationTree(search_space.nasbench.meta_archs))
         elif algo_name == 'bananas':
-            data = bananas(search_space, mp, **ps, predictor='bananas',
+            data = bananas(search_space, mp, **ps, predictor='bananas', old_data=final_data, use_old_data=True,
                            mutation_tree=MutationTree(search_space.nasbench.meta_archs),
                            meta_neuralnet=meta_neuralnet)
         elif algo_name == 'bonas':
@@ -313,9 +313,9 @@ def evolution_search(search_space,
     population = [i for i in range(min(num_init, population_size))]
     # last_5_loss = None
     # early_stop = 0
-    #global GLOBAL_QUERY
+    # global GLOBAL_QUERY
 
-    #while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
+    # while query <= total_queries or (global_queries and GLOBAL_QUERY - query > 0):
     while query <= total_queries:
         # evolve the population by mutating the best architecture
         # from a random subset of the population
@@ -382,7 +382,8 @@ def bananas(search_space,
             verbose=1,
             mutation_tree=None,
             meta_neuralnet=None,
-            global_queries=False):
+            use_old_data=False,
+            old_data=None):
     """
     Bayesian optimization with a neural predictor
     """
@@ -403,8 +404,12 @@ def bananas(search_space,
     while query <= total_queries:
         i += 1
 
-        xtrain = np.array([d['encoding'] for d in data])
-        ytrain = np.array([d[loss] for d in data])
+        if use_old_data:
+            xtrain = np.array([d['encoding'] for d in data+old_data])
+            ytrain = np.array([d[loss] for d in data+old_data])
+        else:
+            xtrain = np.array([d['encoding'] for d in data])
+            ytrain = np.array([d[loss] for d in data])
 
         if len(set(d['spec']['string'] for d in data)) >= len(search_space):
             return data
@@ -435,7 +440,6 @@ def bananas(search_space,
                     meta_neuralnet = MetaNeuralnet()
                 net_params = metann_params['ensemble_params'][e]
 
-                print(f'Before fit. i = {i}, #candidates = {len(candidates)}')
                 train_error += meta_neuralnet.fit(xtrain, ytrain, **net_params)
 
                 # predict the validation loss of the candidate architectures
@@ -501,7 +505,7 @@ def bananas(search_space,
 
         if verbose:
             top_5_loss = sorted([d[loss] for d in data])[:min(5, len(data))]
-            
+
             print('{}, query {}, top 5 losses in current iteration {}'.format(predictor, query, top_5_loss))
             # if top_5_loss == last_5_loss:
             #     early_stop+=1
