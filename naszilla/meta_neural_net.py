@@ -85,7 +85,7 @@ class MetaNeuralnet:
                                             num_layers=num_layers,
                                             layer_width=layer_width,
                                             regularization=regularization)
-        optimizer = keras.optimizers.Adam(lr=lr, beta_1=.9, beta_2=.99)
+        optimizer = keras.optimizers.Adam(learning_rate=lr, beta_1=.9, beta_2=.99)
 
         self.model.compile(optimizer=optimizer, loss=loss_fn)
         #print(self.model.summary())

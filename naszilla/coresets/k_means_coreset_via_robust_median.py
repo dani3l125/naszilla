@@ -9,6 +9,7 @@ from sklearn.cluster import KMeans
 import pandas as pd
 import os
 from scipy.spatial import distance_matrix
+from random import randrange
 
 global statistics_dict
 statistics_dict = {'count': 0, 'mean': 1,
@@ -47,7 +48,10 @@ def k_means_cost(Q, centers, weights=None):
 
 
 def knas_coreset(P, dist_matrix, **kwargs):
-    _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix, **kwargs)
+    if not kwargs['greedy']:
+        _, _, coreset, _, coreset_indexes = k_means_coreset_via_robust_median(P, dist_matrix, **kwargs)
+    else:
+        coreset_indexes = k_centers_coreset_greedy(P, dist_matrix, **kwargs)
     # coreset_indexes = np.zeros(coreset.shape[0])
     # for i, point in enumerate(coreset):
     #     coreset_indexes[i] = np.where((P == point).all(axis=1))[0][0]
@@ -59,6 +63,29 @@ def knas_coreset(P, dist_matrix, **kwargs):
     labels = np.argmin(points2coreset_dist_mat, axis=1)
 
     return coreset_indexes.astype(int), labels.astype(int)
+
+def k_centers_coreset_greedy(P,
+                             dist_matrix=None,
+                             coreset_iteration_sample_size=None,
+                             k=None,
+                             k_ratio=0,
+                             sum_to_max=False,
+                             median_sample_size=10,
+                             tau_for_the_sampled_set=None,
+                             tau_for_the_original_set=None,
+                             Replace_in_coreset_sample=False,
+                             use_threshold_method=False,
+                             random_generation=False,
+                             r=2):
+    if dist_matrix in None:
+        raise Exception('Greedy with geometric does not implemented')
+    k_centers = [randrange(dist_matrix.shape[0])]
+
+    for i in range(k-1):
+        k_centers_array = np.array(k_centers)
+        dist_matrix_from_centers = dist_matrix[k_centers_array]
+        mask = np.ones(dist_matrix.shape[0], bool)
+        mask[k_centers_array] = False
 
 
 def k_means_coreset_via_robust_median(P,
@@ -92,7 +119,7 @@ def k_means_coreset_via_robust_median(P,
         idxes = np.random.choice(P.shape[0], np.min([P.shape[0], median_sample_size]), replace=False)
         sample_for_median = P[idxes]
 
-        sample_for_median_dist_matrix = None if dist_matrix is None else  dist_matrix[idxes][:, idxes]
+        sample_for_median_dist_matrix = None if dist_matrix is None else dist_matrix[idxes][:, idxes]
         if random_generation:
             robust_median_q_idxes = np.random.choice(P.shape[0], 1)
             robust_median_q = P[robust_median_q_idxes].flatten()
@@ -103,20 +130,23 @@ def k_means_coreset_via_robust_median(P,
             else:
                 opt_devided_by_size = np.sum(
                     ((euclidean_distances(robust_median_q.reshape(1, -1), sample_for_median)).flatten()) ** r) / (
-                                                  sample_for_median.shape[0] * delta_const)
+                                              sample_for_median.shape[0] * delta_const)
             # print(opt_devided_by_size)
         else:
-            robust_median_q, opt_devided_by_size, robust_median_q_idx = compute_robust_median(sample_for_median, tau_for_the_sampled_set,
-                                                                         use_threshold_method, r, sample_for_median_dist_matrix, is_max=sum_to_max)  # np.mean(P,axis=0)
+            robust_median_q, opt_devided_by_size, robust_median_q_idx = compute_robust_median(sample_for_median,
+                                                                                              tau_for_the_sampled_set,
+                                                                                              use_threshold_method, r,
+                                                                                              sample_for_median_dist_matrix,
+                                                                                              is_max=sum_to_max)  # np.mean(P,axis=0)
             # print(opt_devided_by_size)
         if not use_threshold_method:
             sorted_indexes_of_distances_from_q = euclidean_distances(robust_median_q.reshape(1, -1), P).argsort()[0] \
-            if dist_matrix is None else dist_matrix[robust_median_q_idx].argsort() # TODO [0]
+                if dist_matrix is None else dist_matrix[robust_median_q_idx].argsort()  # TODO [0]
             closest_points_to_q = sorted_indexes_of_distances_from_q[:int(tau_for_the_original_set * P.shape[0])]
             far_points_from_q = sorted_indexes_of_distances_from_q[int(tau_for_the_original_set * P.shape[0]):]
         else:
             distances_matrix = (euclidean_distances(robust_median_q.reshape(1, -1), P) ** r)[0] \
-            if dist_matrix is None else (dist_matrix[robust_median_q_idx] ** r) # TODO [0]
+                if dist_matrix is None else (dist_matrix[robust_median_q_idx] ** r)  # TODO [0]
             closest_points_to_q = np.argwhere(distances_matrix <= opt_devided_by_size).flatten()
             far_points_from_q = np.argwhere(distances_matrix > opt_devided_by_size).flatten()
         current_sample_size = coreset_iteration_sample_size
@@ -132,7 +162,7 @@ def k_means_coreset_via_robust_median(P,
 
         weights_list.append(np.ones(sampled_close_points.shape[0]) * closest_points_to_q.shape[0])
         P = P[far_points_from_q]
-        orig_indexes =orig_indexes[far_points_from_q]
+        orig_indexes = orig_indexes[far_points_from_q]
         if not dist_matrix is None:
             dist_matrix = dist_matrix[far_points_from_q][:, far_points_from_q]
         # print(P.shape)
@@ -149,7 +179,7 @@ def k_means_coreset_via_robust_median(P,
     coreset_index_list.append(orig_indexes[last_idx])
 
     return coreset_list, weights_list, np.concatenate(coreset_list, axis=0), np.concatenate(weights_list, axis=0), \
-           np.concatenate(coreset_index_list, axis=0)
+        np.concatenate(coreset_index_list, axis=0)
 
 
 def compute_robust_median(Q, tau, use_threshold_method, r, dist_matrix=None, is_max=False):
