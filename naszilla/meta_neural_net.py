@@ -29,8 +29,8 @@ def mape_loss(y_true, y_pred):
 
 class MetaNeuralnet:
 
-    def __init__(self):
-        self.model = None
+    # def __init__(self):
+    #     self.model = None
     def get_dense_model(self, 
                         input_dims, 
                         num_layers,

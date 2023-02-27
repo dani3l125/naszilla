@@ -7,7 +7,7 @@ import copy
 import gc
 import numpy as np
 import tensorflow as tf
-from argparse import Namespace
+from argparse import Namespacels
 from scipy.special import softmax
 
 import naszilla.nas_benchmarks
