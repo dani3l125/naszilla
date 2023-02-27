@@ -84,8 +84,12 @@ def k_centers_coreset_greedy(P,
     for i in range(k-1):
         k_centers_array = np.array(k_centers)
         dist_matrix_from_centers = dist_matrix[k_centers_array]
-        mask = np.ones(dist_matrix.shape[0], bool)
-        mask[k_centers_array] = False
+        dist_matrix_from_centers[:, k_centers_array] = 10000
+        min_idx_per_center = np.argmin(dist_matrix_from_centers, axis=1)
+        min_value_per_center = np.min(dist_matrix_from_centers, axis=1)
+        k_centers.append(min_idx_per_center[np.argmax(min_value_per_center)])
+
+    return np.array(k_centers)
 
 
 def k_means_coreset_via_robust_median(P,

@@ -14,7 +14,9 @@ from naszilla.params import *
 from naszilla.nas_benchmarks import Nasbench101, Nasbench201, Nasbench301, KNasbench201
 from naszilla.nas_algorithms import run_nas_algorithm
 
-label_mapping = {'bananas':'BANANAS', 'local_search':'Local search', 'evolution':'Evolutionary search', 'random': 'Random search'}
+label_mapping = {'bananas': 'BANANAS', 'local_search': 'Local search', 'evolution': 'Evolutionary search',
+                 'random': 'Random search'}
+
 
 def run_experiments(args, save_dir):
     # set up arguments
@@ -103,8 +105,8 @@ def run_experiments(args, save_dir):
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
             for i in range(trials):
-                #p = multiprocessing.Process(target=trial, args=(i,j,))
-                p = threading.Thread(target=trial, args=(i,j,))
+                # p = multiprocessing.Process(target=trial, args=(i,j,))
+                p = threading.Thread(target=trial, args=(i, j,))
                 jobs.append(p)
                 p.start()
 
@@ -135,9 +137,10 @@ def run_experiments(args, save_dir):
             tmp_results = np.stack(tmp_results, axis=0)
             tmp_val_results = np.stack(tmp_val_results, axis=0)
 
-            algorithm_results[algorithm_params[j]['algo_name']] = (np.mean(tmp_results, axis=0), np.std(tmp_results, axis=0))
+            algorithm_results[algorithm_params[j]['algo_name']] = (
+            np.mean(tmp_results, axis=0), np.std(tmp_results, axis=0))
             algorithm_val_results[algorithm_params[j]['algo_name']] = (
-            np.mean(tmp_val_results, axis=0), np.std(tmp_val_results, axis=0))
+                np.mean(tmp_val_results, axis=0), np.std(tmp_val_results, axis=0))
 
             # print and pickle results
             filename = os.path.join(save_dir, '{}_{}.pkl'.format(out_file, i))
@@ -159,13 +162,15 @@ def run_experiments(args, save_dir):
             result = 100 - algorithm_results[algo_name][0]
             val_result = 100 - algorithm_val_results[algo_name][0]
             np.save(
-                'plots/src_data/{}_{}_{}_{}_val_mean'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                'plots/src_data/{}_{}_{}_{}_val_mean'.format(cfg['figName'], args.dataset, compression_method,
+                                                             algo_name),
                 val_result)
             np.save(
                 'plots/src_data/{}_{}_{}_{}_mean'.format(cfg['figName'], args.dataset, compression_method, algo_name),
                 result)
             np.save(
-                'plots/src_data/{}_{}_{}_{}_val_std'.format(cfg['figName'], args.dataset, compression_method, algo_name),
+                'plots/src_data/{}_{}_{}_{}_val_std'.format(cfg['figName'], args.dataset, compression_method,
+                                                            algo_name),
                 algorithm_val_results[algo_name][1])
             np.save(
                 'plots/src_data/{}_{}_{}_{}_std'.format(cfg['figName'], args.dataset, compression_method, algo_name),
@@ -173,14 +178,15 @@ def run_experiments(args, save_dir):
 
         return np.average(k_lists, axis=0).astype(int), np.average(q_lists, axis=0).astype(int)
 
+    k_list, q_list = run_and_save('k_centers_greedy')
     k_list, q_list = run_and_save('k_centers_coreset')
     # k_list, q_list = run_and_save('uniform')
     if args.study:
         cfg['kScheduler']['type'] = 'manual'
         cfg['kScheduler']['manual'] = k_list
-        for compression_method in ['k_centers_coreset_geometric', 'k_medians_coreset', 'k_means_coreset', 'k_medoids', 'uniform']:
+        for compression_method in ['k_centers_coreset_geometric', 'k_medians_coreset', 'k_centers_greedy',
+                                   'k_means_coreset', 'k_medoids', 'uniform']:
             run_and_save(compression_method)
-
 
 
 def main(args):
@@ -224,7 +230,8 @@ if __name__ == "__main__":
     parser.add_argument('--save_specs', type=bool, default=False, help='save the architecture specs')
     parser.add_argument('--save_sota', type=int, default=0, help='save the convergence result to a numpy array')
     parser.add_argument('--k_alg', type=int, default=0, help='use iterative k algorithm')
-    parser.add_argument('--sample_size_graphs', type=int, default=0, help='plot graphs with coreset size independent variable')
+    parser.add_argument('--sample_size_graphs', type=int, default=0,
+                        help='plot graphs with coreset size independent variable')
     parser.add_argument('--k_graphs', type=int, default=0, help='plot graphs with coreset size independent variable')
     parser.add_argument('--study', type=int, default=0, help='ablation study graphs')
     parser.add_argument('--cfg', type=str, default='/home/daniel/naszilla/naszilla/knas_config.yaml',
@@ -232,4 +239,3 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(args)
-
