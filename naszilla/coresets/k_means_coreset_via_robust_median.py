@@ -94,6 +94,7 @@ def k_centers_coreset_greedy(P,
 
 def k_means_coreset_via_robust_median(P,
                                       dist_matrix=None,
+                                      greedy=False,
                                       coreset_iteration_sample_size=None,
                                       k=None,
                                       k_ratio=0,
