@@ -736,6 +736,8 @@ class KNasbench201(Nasbench201):
         self.old_nasbench = copy.deepcopy(self.nasbench)
         print(f'Compression: {self.compression_method}')
 
+        self.compression_kwargs['greedy'] = (self.compression_method == 'k_centers_greedy')
+
         if self.compression_method == 'uniform':
             self.coreset_indexes = np.random.choice(len(self.nasbench.evaluated_indexes),k)
             points2coreset_dist_mat = self.distances[self.nasbench.evaluated_indexes][
@@ -761,7 +763,7 @@ class KNasbench201(Nasbench201):
             k = self.coreset_indexes.shape[0]
 
 
-        elif self.compression_method in ['k_means_coreset', 'k_medians_coreset', 'k_centers_coreset']:
+        elif self.compression_method in ['k_means_coreset', 'k_medians_coreset', 'k_centers_coreset', 'k_centers_greedy']:
             if self.compression_kwargs['k_ratio']:
                 self.compression_kwargs['k'] = int(len(self.nasbench) * self.compression_kwargs['k_ratio'])
             else:
