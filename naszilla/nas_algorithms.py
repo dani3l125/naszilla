@@ -175,6 +175,7 @@ def knas(algo_params, search_space, mp, cfg, control):
             elif cfg['kScheduler']['type'] == 'geometric':
                 k = len(search_space) // cfg['kScheduler']['constant']
             else:  # cfg['kScheduler']['type'] == 'manual'
+                print('Manual: {}'.format(cfg['kScheduler']['manual']))
                 k = min(cfg['kScheduler']['manual'][i], len(search_space))
 
         if k != -1:
