@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH -o %j
-#SBATCH -e %j
+#SBATCH -o %j.out
+#SBATCH -e %j.err
 #SBATCH -D /users/feldman/dyakovlev/naszilla
 #SBATCH --time=7-00:00:00
 #SBATCH --get-user-env
