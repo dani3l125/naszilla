@@ -189,7 +189,7 @@ def knas(algo_params, search_space, mp, cfg, control):
             m = q // cfg['m_c']
 
         ps['total_queries'] = q
-        ps['global_queries'] = cfg['global_queries']
+        # ps['global_queries'] = cfg['global_queries']
         print(f'#####\nIteration {i + 1}: k = {k}; m = {m}; q = {q}; space size = {space_size}')
         kq_list[0].append(k)
         kq_list[1].append(q)
