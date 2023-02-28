@@ -1,10 +1,10 @@
 #!/bin/bash
 
-NTHREADS=7
-TRIALS=5
+NTHREADS=11
+TRIALS=10
 datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 algos=('random' 'local_search' 'evolution')
-studies=(0 1)
+studies=(1)
 cfgs=('/dyakovlev/naszilla/naszilla/config_files/1.yaml')
 
 for dataset in ${datasets[@]}; do

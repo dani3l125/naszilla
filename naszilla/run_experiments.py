@@ -178,13 +178,12 @@ def run_experiments(args, save_dir):
 
         return np.average(k_lists, axis=0).astype(int), np.average(q_lists, axis=0).astype(int)
 
-    k_list, q_list = run_and_save('k_centers_greedy')
     k_list, q_list = run_and_save('k_centers_coreset')
     # k_list, q_list = run_and_save('uniform')
     if args.study:
         cfg['kScheduler']['type'] = 'manual'
         cfg['kScheduler']['manual'] = k_list
-        for compression_method in ['k_centers_coreset_geometric', 'k_medians_coreset', 'k_centers_greedy',
+        for compression_method in ['k_medians_coreset', 'k_centers_greedy',
                                    'k_means_coreset', 'k_medoids', 'uniform']:
             run_and_save(compression_method)
 
