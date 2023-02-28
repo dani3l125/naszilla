@@ -14,6 +14,6 @@ for dataset in ${datasets[@]}; do
         sbatch -J "${algo}_${dataset}_cfg${cfg}_study${study}" --export=NTHREADS${NTHREADS},TRIALS${TRIALS},ALG=${algo},DATA=${dataset},STUDY=${study},CFG=${cfg} one_experiment.sh
       sbatch -J "bananas_${dataset}_cfg${cfg}_study${study}" --export=NTHREADS${NTHREADS},TRIALS${TRIALS},ALG='bananas',DATA=${dataset},STUDY=${study},CFG=${cfg} one_experiment_bananas.sh
       done
-    don
+    done
   done
 done
