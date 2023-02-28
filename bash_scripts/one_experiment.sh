@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH -o %j
 #SBATCH -e %j
-#SBATCH -D /users/feldman/dyakovlev/knas
+#SBATCH -D /users/feldman/dyakovlev/naszilla
 #SBATCH --time=7-00:00:00
 #SBATCH --get-user-env
 #SBATCH --nodes 1
