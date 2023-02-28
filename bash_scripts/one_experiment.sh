@@ -1,12 +1,11 @@
 #!/bin/bash
-#SBATCH -o %j.out
-#SBATCH -e %j.err
+#SBATCH -o %x.out
+#SBATCH -e %x.err
 #SBATCH -D /users/feldman/dyakovlev/naszilla
 #SBATCH --time=7-00:00:00
 #SBATCH --get-user-env
 #SBATCH --nodes 1
 
-echo $ALG
 
 srun --mincpus=$NTHREADS \
  --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
