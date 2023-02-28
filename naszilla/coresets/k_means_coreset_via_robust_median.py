@@ -78,7 +78,7 @@ def k_centers_coreset_greedy(P,
                              use_threshold_method=False,
                              random_generation=False,
                              r=2):
-    if dist_matrix in None:
+    if dist_matrix is None:
         raise Exception('Greedy with geometric does not implemented')
     k_centers = [randrange(dist_matrix.shape[0])]
 
