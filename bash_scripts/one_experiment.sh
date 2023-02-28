@@ -6,6 +6,8 @@
 #SBATCH --get-user-env
 #SBATCH --nodes 1
 
+echo $ALG
+
 srun --mincpus=$NTHREADS \
  --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
  /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
