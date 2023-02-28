@@ -82,7 +82,7 @@ def k_centers_coreset_greedy(P,
         raise Exception('Greedy with geometric does not implemented')
     k_centers = [randrange(dist_matrix.shape[0])]
 
-    for i in range(k-1):
+    for i in range(int(k-1)):
         k_centers_array = np.array(k_centers)
         dist_matrix_from_centers = dist_matrix[k_centers_array]
         dist_matrix_from_centers[:, k_centers_array] = 10000
