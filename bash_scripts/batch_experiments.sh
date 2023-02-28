@@ -3,7 +3,6 @@
 NTHREADS=11
 TRIALS=10
 #datasets=('cifar10' 'cifar100' 'ImageNet16-120')
-algos=('random' 'local_search' 'evolution')
 datasets=('cifar100' 'ImageNet16-120')
 algos=('random' 'local_search' 'evolution')
 studies=(1)
