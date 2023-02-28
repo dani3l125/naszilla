@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH -o %x.%j.out
-#SBATCH -e %x.%j.err
+#SBATCH -o /users/feldman/dyakovlev/naszilla/%j.out
+#SBATCH -e /users/feldman/dyakovlev/naszilla/%j.err
 #SBATCH -D /users/feldman/dyakovlev/knas
 #SBATCH -G 1
 #SBATCH --time=7-00:00:00
