@@ -4,12 +4,12 @@ TRIALS=1
 
 for i in 1 2
 do
-  screen -L -Logfile cidar10_exp$i -S cidar10_exp$i -d -m bash -c\
+  screen -L -Logfile cidar10_exp$i -S cifar10_exp$i -d -m bash -c\
     "/home/daniel/anaconda3/envs/knas/bin/python /home/daniel/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \
   --algo_params bananas --queries 300 --trials $TRIALS --k_alg 1 --cfg /home/daniel/naszilla/naszilla/config_files/$i.yaml\
     --dataset cifar10"
 
-  screen -L -Logfile cidar100_exp$i -S cidar100_exp$i -d -m bash -c\
+  screen -L -Logfile cidar100_exp$i -S cifar100_exp$i -d -m bash -c\
     "/home/daniel/anaconda3/envs/knas/bin/python /home/daniel/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \
   --algo_params bananas --queries 300 --trials $TRIALS --k_alg 1 --cfg /home/daniel/naszilla/naszilla/config_files/$i.yaml\
     --dataset cifar100"
