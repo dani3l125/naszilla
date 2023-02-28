@@ -12,7 +12,7 @@ for dataset in ${datasets[@]}; do
     for study in ${studies[@]}; do
       for algo in ${algos[@]}; do
         /home/daniel/anaconda3/envs/knas/bin/python /home/daniel/naszilla/naszilla/run_experiments.py --search_space nasbench_201 \
-        --algo_params ${algo} --queries 300 --trials ${$TRIALS} --k_alg 1 --cfg ${cfg}\
+        --algo_params ${algo} --queries 300 --trials ${TRIALS} --k_alg 1 --cfg ${cfg}\
         --dataset ${dataset}
       done
     done
