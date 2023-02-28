@@ -66,6 +66,7 @@ def knas_coreset(P, dist_matrix, **kwargs):
 
 def k_centers_coreset_greedy(P,
                              dist_matrix=None,
+                             greedy=False,
                              coreset_iteration_sample_size=None,
                              k=None,
                              k_ratio=0,
