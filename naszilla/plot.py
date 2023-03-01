@@ -14,6 +14,7 @@ label_mapping = {'bananas': 'BANANAS', 'local_search': 'Local search', 'evolutio
 #                  'random': 'Random search'}
 
 all_algs_mapping = {'k_centers_coreset': 'Coreset for k centers',
+                    'k_centers_greedy': 'Greedy k centers',
                     #'k_centers_coreset_geometric': 'Coreset for k centers with geometric mapping',
                     'k_medians_coreset': 'Coreset for k medians', 'k_means_coreset': 'Coreset for k means',
                     'k_medoids': 'k medoids',

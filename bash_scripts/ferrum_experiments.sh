@@ -1,9 +1,9 @@
 #!/bin/bash
 
 NTHREADS=1
-TRIALS=1
+TRIALS=10
 datasets=('cifar10' 'cifar100' 'ImageNet16-120')
-algos=('random' 'local_search' 'evolution', 'bananas')
+algos=('local_search')
 studies=(1)
 cfgs=('/home/daniel/naszilla/naszilla/config_files/1.yaml')
 
