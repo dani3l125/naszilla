@@ -26,7 +26,7 @@ from naszilla.nas_bench_201.distances import *
 from naszilla.coresets.k_means_coreset_via_robust_median import knas_coreset
 
 default_data_folder = '~/nas_benchmark_datasets/'
-CUDA = 1
+CUDA = 0
 
 
 def to_numpy_array(shared_array, shape):
