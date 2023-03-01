@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TRIALS=4
+TRIALS=5
 NTHREADS=5
 #datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 #algos=('evolution' 'random' 'local_search')
