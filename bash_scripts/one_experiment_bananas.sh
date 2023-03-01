@@ -7,7 +7,7 @@
 #SBATCH --get-user-env
 #SBATCH --nodes 1
 
-srun --cpus-per-task=11 --gpus=1 \
+srun --cpus-per-task=$NTHREADS --gpus=1 \
  --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
  /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
 cd /dyakovlev/naszilla;
