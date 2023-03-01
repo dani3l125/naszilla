@@ -9,7 +9,7 @@ algos=('evolution' 'random' 'local_search')
 studies=(1)
 cfgs=('/dyakovlev/naszilla/naszilla/config_files/1.yaml')
 exps=(1 2)
-dgxs=('dgx02' 'dgx04' 'dgx06')
+dgxs=(dgx02 dgx04 dgx06)
 
 for index in 1 2 3; do
   for exp in ${exps[@]}; do
