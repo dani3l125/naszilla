@@ -6,7 +6,7 @@
 #SBATCH --get-user-env
 #SBATCH --nodes 1
 
-srun \
+srun --cpus-per-task=$NTHREADS \
 --container-image=/users/feldman/dyakovlev/knas.sqsh --container-mounts=/users/feldman/dyakovlev/:/dyakovlev \
 /bin/bash -c "export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/naszilla\";export PYTHONPATH=\"${PYTHONPATH}:/dyakovlev/nasbench\";
 cd /dyakovlev/naszilla; printf \"\n\n\n####################\n Experiment 1 study\n####################\n\n\n\"
