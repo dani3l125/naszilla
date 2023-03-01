@@ -11,7 +11,7 @@ cfgs=('/dyakovlev/naszilla/naszilla/config_files/1.yaml')
 exps=(1)
 dgxs=('dgx02' 'dgx04' 'dgx06')
 
-for index in 1 2 3; do
+for index in 0 1 2; do
   for exp in ${exps[@]}; do
     for study in ${studies[@]}; do
       for algo in ${algos[@]}; do
