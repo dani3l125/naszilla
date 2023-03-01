@@ -1,7 +1,7 @@
 #!/bin/bash
 
-NTHREADS=11
-TRIALS=10
+NTHREADS=1
+TRIALS=1
 datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 algos=('random' 'local_search' 'evolution', 'bananas')
 studies=(1)
