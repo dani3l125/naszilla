@@ -109,10 +109,11 @@ def run_experiments(args, save_dir):
                 p = threading.Thread(target=trial, args=(i, j,))
                 jobs.append(p)
                 p.start()
+                p.join()
 
-        for proc in jobs:
-            proc.join()
-            time.sleep(2)
+        # for proc in jobs:
+        #     proc.join()
+        #     time.sleep(2)
 
         for j in range(num_algos):
 
