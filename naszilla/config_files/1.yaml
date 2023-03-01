@@ -1,4 +1,4 @@
-iterations: 5
+iterations: 7
 
 distance: 'path'  # Choose: real, lev, adj, path, nasbot
 
@@ -36,7 +36,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'i5_m3_ciss1_k100_r2_path'
+figName: 'i7_m2_k100_path'
 
 
 
