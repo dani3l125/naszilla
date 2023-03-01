@@ -8,7 +8,7 @@ datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 algos=('evolution' 'random' 'local_search')
 studies=(1)
 cfgs=('/dyakovlev/naszilla/naszilla/config_files/1.yaml')
-exps=(1 2)
+exps=(1)
 dgxs=('dgx02' 'dgx04' 'dgx06')
 
 for index in 1 2 3; do
