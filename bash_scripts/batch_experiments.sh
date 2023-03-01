@@ -3,7 +3,7 @@
 NTHREADS=11
 TRIALS=10
 #datasets=('cifar10' 'cifar100' 'ImageNet16-120')
-datasets=('cifar100' 'ImageNet16-120')
+datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 algos=('evolution' 'random' 'local_search')
 studies=(1)
 cfgs=('/dyakovlev/naszilla/naszilla/config_files/1.yaml')
