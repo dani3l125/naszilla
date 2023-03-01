@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TRIALS=6
-NTHREADS=$TRIALS+1
+NTHREADS=7
 #datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 #algos=('evolution' 'random' 'local_search')
 datasets=('cifar10' 'cifar100' 'ImageNet16-120')
