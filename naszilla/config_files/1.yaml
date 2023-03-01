@@ -6,7 +6,7 @@ threads: 16
 
 compression_method: 'k_centers_coreset' # k_centers_coreset_geometric, k_medians_coreset, k_means_coreset, k_medoids, uniform
 
-qAutofill: False
+qAutofill: True
 
 global_queries: False
 
