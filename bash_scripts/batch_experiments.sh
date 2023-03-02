@@ -1,11 +1,11 @@
 #!/bin/bash
 
-TRIALS=1
-NTHREADS=2
+TRIALS=10
+NTHREADS=11
 #datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 #algos=('evolution' 'random' 'local_search')
 datasets=('cifar10' 'cifar100' 'ImageNet16-120')
-algos=('bananas')
+algos=('random')
 studies=(0)
 exps=(3)
 #dgxs=('dgx02' 'dgx04' 'dgx06')
