@@ -405,10 +405,10 @@ def bananas(search_space,
         i += 1
 
         if use_old_data:
-            # xtrain = np.array([d['encoding'] for d in data+old_data])
-            # ytrain = np.array([d[loss] for d in data+old_data])
-            xtrain = np.array([d['encoding'] for d in data])
-            ytrain = np.array([d[loss] for d in data])
+            xtrain = np.array([d['encoding'] for d in data+old_data])
+            ytrain = np.array([d[loss] for d in data+old_data])
+            # xtrain = np.array([d['encoding'] for d in data])
+            # ytrain = np.array([d[loss] for d in data])
         else:
             xtrain = np.array([d['encoding'] for d in data])
             ytrain = np.array([d[loss] for d in data])
