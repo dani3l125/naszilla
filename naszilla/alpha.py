@@ -1,6 +1,7 @@
 import numpy as np
 from naszilla.coresets.k_means_coreset_via_robust_median import k_means_coreset_via_robust_median
 from scipy.spatial import distance_matrix
+from scipy.special import softmax
 from naszilla.nas_benchmarks import KNasbench201
 import os
 from nas_201_api import NASBench201API as API
@@ -12,52 +13,52 @@ import json
 
 is_debug = True
 
-k_means_coreset_args = {'coreset_iteration_sample_size': 1,
-                        'k': 100,
-                        'k_ratio': 0,
-                        'median_sample_size': 40,
-                        'tau_for_the_sampled_set': None,
-                        'tau_for_the_original_set': None,
-                        'Replace_in_coreset_sample': 0,
-                        'use_threshold_method': 0,
-                        'random_generation': 0,
-                        'r': 2}
-
-parser = argparse.ArgumentParser(description='Args for BANANAS experiments')
-parser.add_argument('--dist', type=str, default='lev', help='Number of trials')
-args = parser.parse_args()
-
-k_list = [4, 6, 8, 10, 12, 14]
-coreset_iteration_sample_size_list = [1]
-median_sample_size_list = [20]
-
-DEFAULT_K = 12
-DEFAULT_CISS = 1
-DEFAULT_SAMPLE_SIZE_LIST = 20
-data_folder = '~/nas_benchmark_datasets/'
-
-if is_debug:
-    search_space = torch.load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
-else:
-    search_space = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
-archs_val = np.zeros((3, len(search_space)))
-for i in range(len(search_space)):
-    archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['accuracy']
-    archs_val[1, i] = search_space.query_by_index(i).get_metrics('cifar100', 'x-valid')['accuracy']
-    archs_val[2, i] = search_space.query_by_index(i).get_metrics('ImageNet16-120', 'x-valid')['accuracy']
-
-d = 10
-dataset = 'cifar100'
-dist_matrix = np.load(f'distances/{args.dist}_dist.npy')
-P = np.zeros_like(dist_matrix)[:, :d]
-
-distace_functions = {
-    'adj': adj_distance,
-    'path': path_distance,
-    'lev': lev_distance,
-    'nasbot': nasbot_distance,
-    #    'real': real_distance
-}
+# k_means_coreset_args = {'coreset_iteration_sample_size': 1,
+#                         'k': 100,
+#                         'k_ratio': 0,
+#                         'median_sample_size': 40,
+#                         'tau_for_the_sampled_set': None,
+#                         'tau_for_the_original_set': None,
+#                         'Replace_in_coreset_sample': 0,
+#                         'use_threshold_method': 0,
+#                         'random_generation': 0,
+#                         'r': 2}
+#
+# parser = argparse.ArgumentParser(description='Args for BANANAS experiments')
+# parser.add_argument('--dist', type=str, default='lev', help='Number of trials')
+# args = parser.parse_args()
+#
+# k_list = [4, 6, 8, 10, 12, 14]
+# coreset_iteration_sample_size_list = [1]
+# median_sample_size_list = [20]
+#
+# DEFAULT_K = 12
+# DEFAULT_CISS = 1
+# DEFAULT_SAMPLE_SIZE_LIST = 20
+# data_folder = '~/nas_benchmark_datasets/'
+#
+# if is_debug:
+#     search_space = torch.load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
+# else:
+#     search_space = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+# archs_val = np.zeros((3, len(search_space)))
+# for i in range(len(search_space)):
+#     archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['accuracy']
+#     archs_val[1, i] = search_space.query_by_index(i).get_metrics('cifar100', 'x-valid')['accuracy']
+#     archs_val[2, i] = search_space.query_by_index(i).get_metrics('ImageNet16-120', 'x-valid')['accuracy']
+#
+# d = 10
+# dataset = 'cifar100'
+# dist_matrix = np.load(f'distances/{args.dist}_dist.npy')
+# P = np.zeros_like(dist_matrix)[:, :d]
+#
+# distace_functions = {
+#     'adj': adj_distance,
+#     'path': path_distance,
+#     'lev': lev_distance,
+#     'nasbot': nasbot_distance,
+#     #    'real': real_distance
+# }
 
 
 def calculate_distance_mat(dist_name):
@@ -222,27 +223,46 @@ def cluster_accuracy_statistics(space, dist_matrix):
 
 
 if __name__ == '__main__':
-    statistics_dict = {}
-    for dist_name in distace_functions.keys():
-        print(f'Calculating {dist_name} distance...')
-        dist_matrix = calculate_distance_mat(dist_name)
-        print('Done!')
-        statistics_dict[dist_name] = {}
-        for compression_method in ['k_means_coreset_orig_dist', 'uniform', 'k_medoids']:
-            space = KNasbench201(dataset=dataset, dist_type=dist_name, n_threads=4,
-                                 compression_method=compression_method,
-                                 compression_args=k_means_coreset_args,
-                                 points_alg='evd', is_debug=is_debug)
-            if is_debug:
-                dist_matrix = dist_matrix[:150][:, :150]
-                space.prune(0, 10)
-            else:
-                space.prune(0, 400)
-            statistics_dict[dist_name][compression_method] = cluster_accuracy_statistics(space, dist_matrix)
+    n = 15625
+    q = 300
+    k = 5
+    m = 2
+    iterations = 10
+    ciss=1
+    space_size = n
+    q_list = (q * softmax((1 / iterations) * np.arange(iterations, 0, -1))).astype(int)
+    for j in range(0, iterations):
+        n = int(space_size)
+        for i in range(1, n):
+            current=np.floor(n*(1-1/(2*k)))
+            if current <=1:
+                break
+            n = current
+        space_size = (space_size/i) * (q_list[j]/m)
+        print(f'iteration = {j+1},coreset_size={i}, space size = {int(space_size)}, q = {q_list[j]}')
 
-    print(json.dumps(statistics_dict, sort_keys=True, indent=4))
-    print('coreset iteration sample size= {}, k= {}, median sample size = {}'.format(
-        k_means_coreset_args['coreset_iteration_sample_size'], k_means_coreset_args['k'],
-        k_means_coreset_args['median_sample_size']))
-    torch.save(statistics_dict, 'statistics.pth')
-    print('Statistics saved')
+
+    # statistics_dict = {}
+    # for dist_name in distace_functions.keys():
+    #     print(f'Calculating {dist_name} distance...')
+    #     dist_matrix = calculate_distance_mat(dist_name)
+    #     print('Done!')
+    #     statistics_dict[dist_name] = {}
+    #     for compression_method in ['k_means_coreset_orig_dist', 'uniform', 'k_medoids']:
+    #         space = KNasbench201(dataset=dataset, dist_type=dist_name, n_threads=4,
+    #                              compression_method=compression_method,
+    #                              compression_args=k_means_coreset_args,
+    #                              points_alg='evd', is_debug=is_debug)
+    #         if is_debug:
+    #             dist_matrix = dist_matrix[:150][:, :150]
+    #             space.prune(0, 10)
+    #         else:
+    #             space.prune(0, 400)
+    #         statistics_dict[dist_name][compression_method] = cluster_accuracy_statistics(space, dist_matrix)
+    #
+    # print(json.dumps(statistics_dict, sort_keys=True, indent=4))
+    # print('coreset iteration sample size= {}, k= {}, median sample size = {}'.format(
+    #     k_means_coreset_args['coreset_iteration_sample_size'], k_means_coreset_args['k'],
+    #     k_means_coreset_args['median_sample_size']))
+    # torch.save(statistics_dict, 'statistics.pth')
+    # print('Statistics saved')

@@ -120,8 +120,9 @@ def k_means_coreset_via_robust_median(P,
     if tau_for_the_sampled_set is None: tau_for_the_sampled_set = 15 / (16 * k)
     if tau_for_the_original_set is None: tau_for_the_original_set = 1 / (2 * k)
     if coreset_iteration_sample_size is None: coreset_iteration_sample_size = (k ** 2) / (eps ** 2)
-
-    while tau_for_the_original_set * P.shape[0] > coreset_iteration_sample_size:
+    i=0
+    while (1 - tau_for_the_original_set) * P.shape[0] > coreset_iteration_sample_size:
+        i+=1
         idxes = np.random.choice(P.shape[0], np.min([P.shape[0], median_sample_size]), replace=False)
         sample_for_median = P[idxes]
 
@@ -148,8 +149,8 @@ def k_means_coreset_via_robust_median(P,
         if not use_threshold_method:
             sorted_indexes_of_distances_from_q = euclidean_distances(robust_median_q.reshape(1, -1), P).argsort()[0] \
                 if dist_matrix is None else dist_matrix[robust_median_q_idx].argsort()  # TODO [0]
-            closest_points_to_q = sorted_indexes_of_distances_from_q[:int(tau_for_the_original_set * P.shape[0])]
-            far_points_from_q = sorted_indexes_of_distances_from_q[int(tau_for_the_original_set * P.shape[0]):]
+            closest_points_to_q = sorted_indexes_of_distances_from_q[:int(np.floor(tau_for_the_original_set * P.shape[0]))]
+            far_points_from_q = sorted_indexes_of_distances_from_q[int(np.ceil(tau_for_the_original_set * P.shape[0])):]
         else:
             distances_matrix = (euclidean_distances(robust_median_q.reshape(1, -1), P) ** r)[0] \
                 if dist_matrix is None else (dist_matrix[robust_median_q_idx] ** r)  # TODO [0]
@@ -171,6 +172,7 @@ def k_means_coreset_via_robust_median(P,
         orig_indexes = orig_indexes[far_points_from_q]
         if not dist_matrix is None:
             dist_matrix = dist_matrix[far_points_from_q][:, far_points_from_q]
+        print(P.shape, i)
         # print(P.shape)
         # plt.plot(np.concatenate(coreset_list, axis=0)[:,0], np.concatenate(coreset_list, axis=0)[:,1], 'o', color = 'red',
         #     label="coreset")
@@ -412,3 +414,7 @@ def compute_dist_matrix_via_einsum(a):
     b = a.reshape(a.shape[0], 1, a.shape[1])
     distarray = np.sqrt(np.einsum('ijk, ijk->ij', a - b, a - b))
     return distarray
+
+if __name__ == '__main__':
+    P = np.random.rand(1000, 3).astype(np.float64)
+    k_means_coreset_via_robust_median(P=P, coreset_iteration_sample_size=1, k=100)
