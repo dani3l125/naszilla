@@ -12,7 +12,7 @@ global_queries: False
 
 manual_schedulers: False
 
-m_c: 3
+m_c: 2
 
 k_means_coreset_args:
     coreset_iteration_sample_size: 1
