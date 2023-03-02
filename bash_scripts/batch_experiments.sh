@@ -5,9 +5,9 @@ NTHREADS=11
 #datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 #algos=('evolution' 'random' 'local_search')
 datasets=('cifar10' 'cifar100' 'ImageNet16-120')
-algos=('local_search')
+algos=('evolution')
 studies=(0)
-exps=(2)
+exps=(1)
 #dgxs=('dgx02' 'dgx04' 'dgx06')
 
 for index in 0 1 2; do
