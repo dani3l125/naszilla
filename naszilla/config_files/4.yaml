@@ -1,6 +1,6 @@
 iterations: 8
 
-distance: 'real'  # Choose: real, lev, adj, path, nasbot
+distance: 'path'  # Choose: real, lev, adj, path, nasbot
 
 threads: 16
 
