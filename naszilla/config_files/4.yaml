@@ -12,7 +12,7 @@ global_queries: True
 
 manual_schedulers: False
 
-m_c: 1
+m_c: 2
 
 k_means_coreset_args:
     coreset_iteration_sample_size: 1
@@ -36,7 +36,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'i5_m12_ciss1_k250_real'
+figName: 'i10_m2_k20_real'
 
 
 
