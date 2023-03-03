@@ -2,10 +2,10 @@
 
 NTHREADS=1
 TRIALS=1
-datasets=('cifar10' 'cifar100' 'ImageNet16-120')
+datasets=('ImageNet16-120')
 algos=('evolution' 'bananas' 'local_search' 'random')
-studies=(1)
-cfgs=('/home/daniel/naszilla/naszilla/config_files/4.yaml')
+studies=(0)
+cfgs=('/home/daniel/naszilla/naszilla/config_files/2.yaml')
 
 for dataset in ${datasets[@]}; do
   for cfg in ${cfgs[@]}; do
