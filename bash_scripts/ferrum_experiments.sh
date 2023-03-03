@@ -5,7 +5,7 @@ TRIALS=1
 datasets=('ImageNet16-120')
 algos=('evolution' 'bananas' 'local_search' 'random')
 studies=(0)
-cfgs=('/home/daniel/naszilla/naszilla/config_files/4.yaml')
+cfgs=('/home/daniel/naszilla/naszilla/config_files/2.yaml')
 
 for dataset in ${datasets[@]}; do
   for cfg in ${cfgs[@]}; do
