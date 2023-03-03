@@ -1,12 +1,12 @@
 #!/bin/bash
 
-TRIALS=10
-NTHREADS=7
+TRIALS=5
+NTHREADS=5
 #datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 algos=('evolution' 'random' 'local_search')
 datasets=('ImageNet16-120')
 studies=(0)
-exps=(1 2)
+exps=(1 2 3 4)
 #dgxs=('dgx02' 'dgx04' 'dgx06')
 
 for index in 0; do
