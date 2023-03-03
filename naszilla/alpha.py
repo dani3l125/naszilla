@@ -225,9 +225,9 @@ def cluster_accuracy_statistics(space, dist_matrix):
 if __name__ == '__main__':
     n = 15625
     q = 300
-    k = 5
+    k =
     m = 2
-    iterations = 20
+    iterations = 50
     ciss=1
     space_size = n
     q_list = (q * softmax((1 / iterations) * np.arange(iterations, 0, -1))).astype(int)
