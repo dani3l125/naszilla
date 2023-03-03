@@ -107,7 +107,7 @@ def k_means_coreset_via_robust_median(P,
                                       use_threshold_method=False,
                                       random_generation=False,
                                       r=2):
-    if median_sample_size < 1:
+    if median_sample_size <= 1:
         median_sample_size = int(median_sample_size * P.shape[0])
 
     orig_indexes = np.arange(P.shape[0])
@@ -172,7 +172,6 @@ def k_means_coreset_via_robust_median(P,
         orig_indexes = orig_indexes[far_points_from_q]
         if not dist_matrix is None:
             dist_matrix = dist_matrix[far_points_from_q][:, far_points_from_q]
-        print(P.shape, i)
         # print(P.shape)
         # plt.plot(np.concatenate(coreset_list, axis=0)[:,0], np.concatenate(coreset_list, axis=0)[:,1], 'o', color = 'red',
         #     label="coreset")
@@ -417,4 +416,4 @@ def compute_dist_matrix_via_einsum(a):
 
 if __name__ == '__main__':
     P = np.random.rand(1000, 3).astype(np.float64)
-    k_means_coreset_via_robust_median(P=P, coreset_iteration_sample_size=1, k=100)
+    k_means_coreset_via_robust_median(P=P, coreset_iteration_sample_size=1, k=100, median_sample_size=1)

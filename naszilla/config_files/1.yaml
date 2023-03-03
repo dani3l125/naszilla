@@ -1,4 +1,4 @@
-iterations: 5
+iterations: 10
 
 distance: 'real'  # Choose: real, lev, adj, path, nasbot
 
@@ -16,10 +16,10 @@ m_c: 2
 
 k_means_coreset_args:
     coreset_iteration_sample_size: 1
-    k: 20
+    k: 5
     k_ratio: 0
     sum_to_max: 1
-    median_sample_size: 50
+    median_sample_size: 1
     tau_for_the_sampled_set: null
     tau_for_the_original_set: null
     Replace_in_coreset_sample: 0
@@ -36,7 +36,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'i5_m2_k20_real'
+figName: 'i10_m2_k5_real'
 
 
 
