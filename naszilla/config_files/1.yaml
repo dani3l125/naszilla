@@ -19,7 +19,7 @@ k_means_coreset_args:
     k: 5
     k_ratio: 0
     sum_to_max: 1
-    median_sample_size: 1
+    median_sample_size: 150
     tau_for_the_sampled_set: null
     tau_for_the_original_set: null
     Replace_in_coreset_sample: 0
