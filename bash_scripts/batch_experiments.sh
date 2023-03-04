@@ -6,7 +6,7 @@ datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 algos=('evolution')
 #datasets=('ImageNet16-120')
 studies=(0)
-exps=(1)
+exps=(5)
 #dgxs=('dgx02' 'dgx04' 'dgx06')
 
 for index in 1 2; do
