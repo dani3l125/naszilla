@@ -432,19 +432,23 @@ if __name__ == '__main__':
     cifar100_loss_list = []
     imagenet_loss_list = []
     threads = []
-    def thread_func(k):
+    def thread_func(k, indexes):
         heuristic_loss = 0
         cifar10_loss = 0
         cifar100_loss = 0
         imagenet_loss = 0
+        dist_subset = dist[indexes][:,indexes]
+        cifar10_dist_subset = cifar10_dist[indexes][:,indexes]
+        cifar100_dist_subset = cifar100_dist[indexes][:, indexes]
+        imagenet_dist_subset = imagenet_dist[indexes][:, indexes]
         for t in range(trials):
-            _, _, _, _, coreset_idx = k_means_coreset_via_robust_median(P=P, dist_matrix=dist,
+            _, _, _, _, coreset_idx = k_means_coreset_via_robust_median(P=P[indexes], dist_matrix=dist_subset,
                                                                         coreset_iteration_sample_size=1, k=k,
                                                                         median_sample_size=150)
-            heuristic_loss += np.max(np.min(dist[coreset_idx], axis=0))
-            cifar10_loss += np.max(np.min(cifar10_dist[coreset_idx], axis=0))
-            cifar100_loss += np.max(np.min(cifar100_dist[coreset_idx], axis=0))
-            imagenet_loss += np.max(np.min(imagenet_dist[coreset_idx], axis=0))
+            heuristic_loss += np.max(np.min(dist_subset[coreset_idx], axis=0))
+            cifar10_loss += np.max(np.min(cifar10_dist_subset[coreset_idx], axis=0))
+            cifar100_loss += np.max(np.min(cifar100_dist_subset[coreset_idx], axis=0))
+            imagenet_loss += np.max(np.min(imagenet_dist_subset[coreset_idx], axis=0))
         heuristic_loss /= trials
         cifar10_loss /= trials
         cifar100_loss /= trials
@@ -464,8 +468,9 @@ if __name__ == '__main__':
 
     for size in range(0, 15000, 1000):
         print(f'\n\n$$$Size of spaece is {size}$$$\n\n')
+        indexes = np.random.randint(0, 15626, size)
         for k in k_list:
-            thread = Thread(target=thread_func, args=(k,))
+            thread = Thread(target=thread_func, args=(k,indexes))
             thread.start()
             threads.append(thread)
         for thread in threads:
