@@ -421,9 +421,9 @@ if __name__ == '__main__':
     P = np.random.rand(15625, 3).astype(np.float64)
     dist = np.load('/home/daniel/naszilla/distances/nasbot_dist.npy')
     datasets = ('cifar10', 'cifar100', 'ImageNet16-120')
-    cifar10_dist = np.load(f'/home/daniel/naszilla/cifar10_dist.npy')
-    cifar100_dist = np.load(f'/home/daniel/naszilla/cifar100_dist.npy')
-    imagenet_dist = np.load(f'/home/daniel/naszilla/ImageNet16-120_dist.npy')
+    cifar10_dist = np.load(f'/home/daniel/naszilla/distances/cifar10_dist.npy')
+    cifar100_dist = np.load(f'/home/daniel/naszilla/distances/cifar100_dist.npy')
+    # imagenet_dist = np.load(f'/home/daniel/naszilla/distancesImageNet16-120_dist.npy')
     k_list = [5, 10, 20, 35, 50, 70, 90, 110, 140, 160, 190, 220]
     k_list_plot = []
     hloss_list = []
