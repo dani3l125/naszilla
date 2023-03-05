@@ -466,7 +466,7 @@ if __name__ == '__main__':
         print(
             f'k: {k} | heuristic loss: {heuristic_loss} | cifar10 loss: {cifar10_loss} | cifar100 loss: {cifar100_loss} | imagenet loss: {imagenet_loss}')
 
-    for size in range(0, 15000, 1000):
+    for size in range(500, 15000, 1000):
         print(f'\n\n$$$Size of spaece is {size}$$$\n\n')
         indexes = np.random.randint(0, 15626, size)
         for k in k_list:
