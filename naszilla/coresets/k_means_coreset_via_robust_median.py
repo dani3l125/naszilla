@@ -416,6 +416,7 @@ def compute_dist_matrix_via_einsum(a):
     return distarray
 
 busy = False
+trials = 5
 
 if __name__ == '__main__':
     P = np.random.rand(15625, 3).astype(np.float64)
@@ -432,13 +433,22 @@ if __name__ == '__main__':
     imagenet_loss_list = []
     threads = []
     def thread_func(k):
-        _, _, _, _, coreset_idx = k_means_coreset_via_robust_median(P=P, dist_matrix=dist,
-                                                                    coreset_iteration_sample_size=1, k=k,
-                                                                    median_sample_size=150)
-        heuristic_loss = np.max(np.min(dist[coreset_idx], axis=0))
-        cifar10_loss = np.max(np.min(cifar10_dist[coreset_idx], axis=0))
-        cifar100_loss = np.max(np.min(cifar100_dist[coreset_idx], axis=0))
-        imagenet_loss = np.max(np.min(imagenet_dist[coreset_idx], axis=0))
+        heuristic_loss = 0
+        cifar10_loss = 0
+        cifar100_loss = 0
+        imagenet_loss = 0
+        for t in range(trials):
+            _, _, _, _, coreset_idx = k_means_coreset_via_robust_median(P=P, dist_matrix=dist,
+                                                                        coreset_iteration_sample_size=1, k=k,
+                                                                        median_sample_size=150)
+            heuristic_loss += np.max(np.min(dist[coreset_idx], axis=0))
+            cifar10_loss += np.max(np.min(cifar10_dist[coreset_idx], axis=0))
+            cifar100_loss += np.max(np.min(cifar100_dist[coreset_idx], axis=0))
+            imagenet_loss += np.max(np.min(imagenet_dist[coreset_idx], axis=0))
+        heuristic_loss /= trials
+        cifar10_loss /= trials
+        cifar100_loss /= trials
+        imagenet_loss /= trials
         global busy
         while busy:
             time.sleep(2)
@@ -451,24 +461,13 @@ if __name__ == '__main__':
         busy = False
         print(
             f'k: {k} | heuristic loss: {heuristic_loss} | cifar10 loss: {cifar10_loss} | cifar100 loss: {cifar100_loss} | imagenet loss: {imagenet_loss}')
-    for k in k_list:
-        thread = Thread(target=thread_func, args=(k,))
-        thread.start()
 
-
-    plt.figure()
-    plt.plot(k_list_plot, hloss_list)
-    plt.title('Heuristic')
-    plt.savefig('Heuristic')
-    plt.figure()
-    plt.plot(k_list_plot, cifar10_loss_list)
-    plt.title('cifar10')
-    plt.savefig('cifar10')
-    plt.figure()
-    plt.plot(k_list_plot, cifar100_loss_list)
-    plt.savefig('cifar100')
-    plt.figure()
-    plt.plot(k_list_plot, imagenet_loss_list)
-    plt.title('imagenet')
-    plt.savefig('imagenet')
+    for size in range(0, 15000, 1000):
+        print(f'\n\n$$$Size of spaece is {size}$$$\n\n')
+        for k in k_list:
+            thread = Thread(target=thread_func, args=(k,))
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
 
