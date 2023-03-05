@@ -415,5 +415,29 @@ def compute_dist_matrix_via_einsum(a):
     return distarray
 
 if __name__ == '__main__':
-    P = np.random.rand(1000, 3).astype(np.float64)
-    k_means_coreset_via_robust_median(P=P, coreset_iteration_sample_size=1, k=100, median_sample_size=1)
+    P = np.random.rand(15625, 3).astype(np.float64)
+    dist = np.load('/home/daniel/naszilla/distances/nasbot_dist.npy')
+    datasets = ('cifar10', 'cifar100', 'ImageNet16-120')
+    cifar10_dist = np.load(f'/home/daniel/naszilla/cifar10_dist.npy')
+    cifar100_dist = np.load(f'/home/daniel/naszilla/cifar100_dist.npy')
+    imagenet_dist = np.load(f'/home/daniel/naszilla/ImageNet16-120_dist.npy')
+    k_list = [5, 10, 20, 35, 50, 70, 90, 110, 140, 160, 190, 220]
+    hloss_list = []
+    cifar10_loss_list = []
+    cifar100_loss_list = []
+    imagenet_loss_list = []
+    for k in k_list:
+        _, _, _, _, coreset_idx = k_means_coreset_via_robust_median(P=P,dist_matrix=dist, coreset_iteration_sample_size=1, k=k, median_sample_size=150)
+        heuristic_loss = np.max(np.min(dist[coreset_idx], axis=0))
+        cifar10_loss = np.max(np.min(cifar10_dist[coreset_idx], axis=0))
+        cifar100_loss = np.max(np.min(cifar100_dist[coreset_idx], axis=0))
+        imagenet_loss = np.max(np.min(imagenet_dist[coreset_idx], axis=0))
+        hloss_list.append(heuristic_loss)
+        cifar10_loss_list.append(cifar10_loss)
+        cifar100_loss_list.append(cifar100_loss)
+        imagenet_loss_list.append(imagenet_loss)
+        print(f'k: {k} | heuristic loss: {heuristic_loss} | cifar10 loss: {cifar10_loss} | cifar100 loss: {cifar100_loss} | imagenet loss: {imagenet_loss}')
+    plt.figure()
+    plt.plot(k_list, loss_list)
+    plt.show()
+

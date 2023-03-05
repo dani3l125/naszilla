@@ -35,20 +35,17 @@ is_debug = True
 # DEFAULT_K = 12
 # DEFAULT_CISS = 1
 # DEFAULT_SAMPLE_SIZE_LIST = 20
-# data_folder = '~/nas_benchmark_datasets/'
+data_folder = '~/nas_benchmark_datasets/'
 #
-# if is_debug:
-#     search_space = torch.load(os.path.expanduser(data_folder + 'NAS-Bench-mini.pth'))
-# else:
-#     search_space = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
-# archs_val = np.zeros((3, len(search_space)))
-# for i in range(len(search_space)):
-#     archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['accuracy']
-#     archs_val[1, i] = search_space.query_by_index(i).get_metrics('cifar100', 'x-valid')['accuracy']
-#     archs_val[2, i] = search_space.query_by_index(i).get_metrics('ImageNet16-120', 'x-valid')['accuracy']
-#
+search_space = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+archs_val = np.zeros((3, len(search_space)))
+for i in range(len(search_space)):
+    archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['accuracy']
+    archs_val[1, i] = search_space.query_by_index(i).get_metrics('cifar100', 'x-valid')['accuracy']
+    archs_val[2, i] = search_space.query_by_index(i).get_metrics('ImageNet16-120', 'x-valid')['accuracy']
+
 # d = 10
-# dataset = 'cifar100'
+dataset = 'cifar100'
 # dist_matrix = np.load(f'distances/{args.dist}_dist.npy')
 # P = np.zeros_like(dist_matrix)[:, :d]
 #
@@ -61,19 +58,13 @@ is_debug = True
 # }
 
 
-def calculate_distance_mat(dist_name):
-    if os.path.isfile(f'distances/{dist_name}_dist.npy'):
-        return np.load(f'distances/{dist_name}_dist.npy')
-    dist_matrix = np.zeros((len(search_space), len(search_space)))
-    for i, str1 in enumerate(search_space.meta_archs):
-        for j, str2 in enumerate(search_space.meta_archs):
-            if dist_name == 'real':
-                dist_matrix[i, j] = real_distance(Cell201(str1), Cell201(str2), search_space)
-            else:
-                dist_matrix[i, j] = distace_functions[dist_name](Cell201(str1), Cell201(str2))
-
-    np.save(f'distances/{dist_name}_dist.npy', dist_matrix)
-    return dist_matrix
+def calculate_distance_mat(dist_name='real'):
+    for d, dataset in enumerate(['cifar10', 'cifar100', 'imagenet']):
+        dist_matrix = np.zeros((len(search_space), len(search_space)))
+        for i, str1 in enumerate(search_space.meta_archs):
+            for j, str2 in enumerate(search_space.meta_archs):
+                dist_matrix[i, j] = abs(archs_val[d][i] - archs_val[d][j])
+        np.save(f'distances/{dataset}_dist.npy', dist_matrix)
 
 
 def coreset_stats(k, coreset_iteration_sample_size, median_sample_size, num_of_optimums=30):
@@ -223,24 +214,24 @@ def cluster_accuracy_statistics(space, dist_matrix):
 
 
 if __name__ == '__main__':
-    n = 15625
-    q = 300
-    k =
-    m = 2
-    iterations = 50
-    ciss=1
-    space_size = n
-    q_list = (q * softmax((1 / iterations) * np.arange(iterations, 0, -1))).astype(int)
-    for j in range(0, iterations):
-        n = int(space_size)
-        for i in range(1, n):
-            current=np.floor(n*(1-1/(2*k)))
-            if current <=1:
-                break
-            n = current
-        space_size = (space_size/i) * (q_list[j]/m)
-        print(f'iteration = {j+1},coreset_size={i}, space size = {int(space_size)}, q = {q_list[j]}')
-
+    # n = 15625
+    # q = 300
+    # k =
+    # m = 2
+    # iterations = 50
+    # ciss=1
+    # space_size = n
+    # q_list = (q * softmax((1 / iterations) * np.arange(iterations, 0, -1))).astype(int)
+    # for j in range(0, iterations):
+    #     n = int(space_size)
+    #     for i in range(1, n):
+    #         current=np.floor(n*(1-1/(2*k)))
+    #         if current <=1:
+    #             break
+    #         n = current
+    #     space_size = (space_size/i) * (q_list[j]/m)
+    #     print(f'iteration = {j+1},coreset_size={i}, space size = {int(space_size)}, q = {q_list[j]}')
+    calculate_distance_mat()
 
     # statistics_dict = {}
     # for dist_name in distace_functions.keys():
