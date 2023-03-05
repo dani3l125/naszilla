@@ -423,7 +423,7 @@ if __name__ == '__main__':
     datasets = ('cifar10', 'cifar100', 'ImageNet16-120')
     cifar10_dist = np.load(f'/home/daniel/naszilla/distances/cifar10_dist.npy')
     cifar100_dist = np.load(f'/home/daniel/naszilla/distances/cifar100_dist.npy')
-    # imagenet_dist = np.load(f'/home/daniel/naszilla/distancesImageNet16-120_dist.npy')
+    imagenet_dist = np.load(f'/home/daniel/naszilla/distances/imagenet_dist.npy')
     k_list = [5, 10, 20, 35, 50, 70, 90, 110, 140, 160, 190, 220]
     k_list_plot = []
     hloss_list = []
@@ -431,7 +431,7 @@ if __name__ == '__main__':
     cifar100_loss_list = []
     imagenet_loss_list = []
     threads = []
-    def thread(k):
+    def thread_func(k):
         _, _, _, _, coreset_idx = k_means_coreset_via_robust_median(P=P, dist_matrix=dist,
                                                                     coreset_iteration_sample_size=1, k=k,
                                                                     median_sample_size=150)
@@ -451,7 +451,7 @@ if __name__ == '__main__':
         print(
             f'k: {k} | heuristic loss: {heuristic_loss} | cifar10 loss: {cifar10_loss} | cifar100 loss: {cifar100_loss} | imagenet loss: {imagenet_loss}')
     for k in k_list:
-        thread = Thread(target=thread, args=(k,))
+        thread = Thread(target=thread_func, args=(k,))
         thread.start()
 
 
