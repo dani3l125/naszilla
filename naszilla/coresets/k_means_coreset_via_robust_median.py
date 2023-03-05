@@ -439,6 +439,7 @@ if __name__ == '__main__':
         cifar10_loss = np.max(np.min(cifar10_dist[coreset_idx], axis=0))
         cifar100_loss = np.max(np.min(cifar100_dist[coreset_idx], axis=0))
         imagenet_loss = np.max(np.min(imagenet_dist[coreset_idx], axis=0))
+        global busy
         while busy:
             time.sleep(2)
         busy = True
