@@ -424,7 +424,7 @@ if __name__ == '__main__':
     cifar10_dist = np.load(f'/home/daniel/naszilla/distances/cifar10_dist.npy')
     cifar100_dist = np.load(f'/home/daniel/naszilla/distances/cifar100_dist.npy')
     imagenet_dist = np.load(f'/home/daniel/naszilla/distances/imagenet_dist.npy')
-    k_list = [5, 10, 20, 35, 50, 70, 90, 110, 140, 160, 190, 220]
+    k_list = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65 ,70 ,75, 80]
     k_list_plot = []
     hloss_list = []
     cifar10_loss_list = []
