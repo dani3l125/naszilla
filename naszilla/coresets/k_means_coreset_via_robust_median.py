@@ -468,7 +468,7 @@ if __name__ == '__main__':
 
     for size in range(500, 15000, 1000):
         print(f'\n\n$$$Size of spaece is {size}$$$\n\n')
-        indexes = np.random.randint(0, 15626, size)
+        indexes = np.random.randint(0, 15625, size)
         for k in k_list:
             thread = Thread(target=thread_func, args=(k,indexes))
             thread.start()
