@@ -37,12 +37,12 @@ is_debug = True
 # DEFAULT_SAMPLE_SIZE_LIST = 20
 data_folder = '~/nas_benchmark_datasets/'
 #
-search_space = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
-archs_val = np.zeros((3, len(search_space)))
-for i in range(len(search_space)):
-    archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['accuracy']
-    archs_val[1, i] = search_space.query_by_index(i).get_metrics('cifar100', 'x-valid')['accuracy']
-    archs_val[2, i] = search_space.query_by_index(i).get_metrics('ImageNet16-120', 'x-valid')['accuracy']
+# search_space = API(os.path.expanduser(data_folder + 'NAS-Bench-201-v1_0-e61699.pth'))
+# archs_val = np.zeros((3, len(search_space)))
+# for i in range(len(search_space)):
+#     archs_val[0, i] = search_space.query_by_index(i).get_metrics('cifar10-valid', 'x-valid')['accuracy']
+#     archs_val[1, i] = search_space.query_by_index(i).get_metrics('cifar100', 'x-valid')['accuracy']
+#     archs_val[2, i] = search_space.query_by_index(i).get_metrics('ImageNet16-120', 'x-valid')['accuracy']
 
 # d = 10
 dataset = 'cifar100'
@@ -214,24 +214,24 @@ def cluster_accuracy_statistics(space, dist_matrix):
 
 
 if __name__ == '__main__':
-    # n = 15625
-    # q = 300
-    # k =
-    # m = 2
-    # iterations = 50
-    # ciss=1
-    # space_size = n
-    # q_list = (q * softmax((1 / iterations) * np.arange(iterations, 0, -1))).astype(int)
-    # for j in range(0, iterations):
-    #     n = int(space_size)
-    #     for i in range(1, n):
-    #         current=np.floor(n*(1-1/(2*k)))
-    #         if current <=1:
-    #             break
-    #         n = current
-    #     space_size = (space_size/i) * (q_list[j]/m)
-    #     print(f'iteration = {j+1},coreset_size={i}, space size = {int(space_size)}, q = {q_list[j]}')
-    calculate_distance_mat()
+    n = 15625
+    q = 300
+    k = [80, 60, 30]
+    m = 2
+    iterations = 3
+    ciss=1
+    space_size = n
+    q_list = (q * softmax((1 / iterations) * np.arange(iterations, 0, -1))).astype(int)
+    for j in range(0, iterations):
+        n = int(space_size)
+        for i in range(1, n):
+            current=np.floor(n*(1-1/(2*k[j])))
+            if current <=1:
+                break
+            n = current
+        space_size = (space_size/i) * (q_list[j]/m)
+        print(f'iteration = {j+1},coreset_size={i}, space size = {int(space_size)}, q = {q_list[j]}')
+    # calculate_distance_mat()
 
     # statistics_dict = {}
     # for dist_name in distace_functions.keys():
