@@ -106,16 +106,26 @@ def run_experiments(args, save_dir):
             run_data[algorithm_params[j]['algo_name']] = {}
             print('\n* Running NAS algorithm: {}'.format(algorithm_params[j]))
 
-            for i in range(trials):
+            for i in range(trials//3):
                 # p = multiprocessing.Process(target=trial, args=(i,j,))
-                p = threading.Thread(target=trial, args=(i, j,))
-                jobs.append(p)
-                p.start()
-                # p.join()
+                p1 = threading.Thread(target=trial, args=(i, j,))
+                jobs.append(p1)
+                p1.start()
 
-        for proc in jobs:
-            proc.join()
-            time.sleep(2)
+                p2 = threading.Thread(target=trial, args=(i+1, j,))
+                jobs.append(p2)
+                p2.start()
+
+                p3 = threading.Thread(target=trial, args=(i+2, j,))
+                jobs.append(p3)
+                p3.start()
+                p1.join()
+                p2.join()
+                p3.join()
+
+        # for proc in jobs:
+        #     proc.join()
+        #     time.sleep(2)
 
         for j in range(num_algos):
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-TRIALS=8
+TRIALS=9
 NTHREADS=4
 datasets=('cifar10' 'cifar100' 'ImageNet16-120')
 algos=('evolution' 'random' 'local_search')
@@ -9,7 +9,7 @@ studies=(0)
 exps=(1)
 #dgxs=('dgx02' 'dgx04' 'dgx06')
 
-for index in 0; do
+for index in 0 1 2; do
   for exp in ${exps[@]}; do
     for study in ${studies[@]}; do
       for algo in ${algos[@]}; do

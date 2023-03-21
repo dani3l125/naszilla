@@ -18,6 +18,21 @@ def adj_distance(cell_1, cell_2):
     ops_dist = np.sum(np.array(cell_1.get_ops()) != np.array(cell_2.get_ops()))
     return graph_dist + ops_dist
 
+def jdpath_distance(cell_1, cell_2, cutoff=None):
+    """
+    compute the distance between two architectures
+    by comparing their path encodings
+    """
+    if cutoff:
+        encode_1 = np.array(cell_1.encode('trunc_path', cutoff=cutoff))
+        encode_2 = np.array(cell_2.encode('trunc_path', cutoff=cutoff))
+    else:
+        encode_1 = np.array(cell_1.encode('path', cutoff=cutoff))
+        encode_2 = np.array(cell_2.encode('path', cutoff=cutoff))
+    a = np.sum(encode_1 and encode_2)
+    b = np.sum(encode_1 and not encode_2)
+    c = np.sum(not encode_1 and encode_2)
+    return (b+c)/(a+b+c)
 
 def path_distance(cell_1, cell_2, cutoff=None):
     """ 
