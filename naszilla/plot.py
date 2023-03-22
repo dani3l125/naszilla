@@ -15,7 +15,7 @@ label_mapping = {'bananas': 'BANANAS', 'local_search': 'Local search', 'evolutio
 
 all_algs_mapping = {'k_centers_coreset': 'Coreset for k centers',
                     'k_centers_greedy': 'Greedy k centers',
-                    #'k_centers_coreset_geometric': 'Coreset for k centers with geometric mapping',
+                    # 'k_centers_coreset_geometric': 'Coreset for k centers with geometric mapping',
                     'k_medians_coreset': 'Coreset for k medians', 'k_means_coreset': 'Coreset for k means',
                     'k_medoids': 'k medoids',
                     'uniform': 'Uniform sampling'}
@@ -51,6 +51,10 @@ def plot_experiments(args):
         ax1.set_yscale('function', functions=(forward, inverse))
         ax2.set_yscale('function', functions=(forward, inverse))
 
+        exp_name = args.exp_name if args.exp_name else cfg['figName']
+
+        errorbars_num = (args.last-args.first)//10
+
         for compression_method in compress_algs:
 
             if not os.path.exists('plots/src_data'):
@@ -61,47 +65,51 @@ def plot_experiments(args):
                 sota_val_result_mean = 100 - np.load(f'sota_results/{algo_name}_{args.dataset}_mean_val.npy')
                 sota_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std.npy')
                 sota_val_result_std = np.load(f'sota_results/{algo_name}_{args.dataset}_std_val.npy')
-                ax1.errorbar(np.arange(args.first, args.last + 1, 25), sota_result_mean[args.first - 1:args.last:25],
-                             yerr=sota_result_std[max(args.first, 10) - 1:args.last:25], fmt='.',
+                ax1.errorbar(np.arange(args.first, args.last + 1, errorbars_num),
+                             sota_result_mean[args.first - 1:args.last:errorbars_num],
+                             yerr=sota_result_std[max(args.first, 10) - 1:args.last:errorbars_num],
+                             fmt='.',
                              label=f'{label_mapping[algo_name]}', color=color)
                 ax1.plot(np.arange(args.first, args.last + 1), sota_result_mean[args.first - 1:args.last], '-',
                          color=color)
 
-                ax2.errorbar(np.arange(args.first, args.last + 1, 25),
-                             sota_val_result_mean[args.first - 1:args.last:25],
-                             yerr=sota_val_result_std[max(args.first, 10) - 1:args.last:25], fmt='.',
+                ax2.errorbar(np.arange(args.first, args.last + 1, errorbars_num),
+                             sota_val_result_mean[args.first - 1:args.last:errorbars_num],
+                             yerr=sota_val_result_std[max(args.first, 10) - 1:args.last:errorbars_num],
+                             fmt='.',
                              label=f'{label_mapping[algo_name]}', color=color)
                 ax2.plot(np.arange(args.first, args.last + 1), sota_val_result_mean[args.first - 1:args.last], '-',
                          color=color)
-
             if not os.path.exists(
-                    'plots/src_data/{}_{}_{}_{}_mean.npy'.format(cfg['figName'], args.dataset, compression_method,
+                    'plots/src_data/{}_{}_{}_{}_mean.npy'.format(exp_name, args.dataset, compression_method,
                                                                  algo_name)):
                 break
             result_mean = np.load(
-                'plots/src_data/{}_{}_{}_{}_mean.npy'.format(cfg['figName'], args.dataset, compression_method,
+                'plots/src_data/{}_{}_{}_{}_mean.npy'.format(exp_name, args.dataset, compression_method,
                                                              algo_name))
             val_result_mean = np.load(
-                'plots/src_data/{}_{}_{}_{}_val_mean.npy'.format(cfg['figName'], args.dataset, compression_method,
+                'plots/src_data/{}_{}_{}_{}_val_mean.npy'.format(exp_name, args.dataset, compression_method,
                                                                  algo_name))
             result_std = np.load(
-                'plots/src_data/{}_{}_{}_{}_std.npy'.format(cfg['figName'], args.dataset, compression_method,
+                'plots/src_data/{}_{}_{}_{}_std.npy'.format(exp_name, args.dataset, compression_method,
                                                             algo_name))
             val_result_std = np.load(
-                'plots/src_data/{}_{}_{}_{}_val_std.npy'.format(cfg['figName'], args.dataset, compression_method,
+                'plots/src_data/{}_{}_{}_{}_val_std.npy'.format(exp_name, args.dataset, compression_method,
                                                                 algo_name))
 
             color = next(cycle)['color']
-            ax1.errorbar(np.arange(args.first, args.last + 1, 25), result_mean[args.first - 1:args.last:25],
-                         yerr=result_std[max(args.first, 10) - 1:args.last:25], fmt='.',
+            ax1.errorbar(np.arange(args.first, args.last + 1, errorbars_num),
+                         result_mean[args.first - 1:args.last:errorbars_num],
+                         yerr=result_std[max(args.first, 10) - 1:args.last:errorbars_num], fmt='.',
                          label='{} + {}'.format(label_mapping[algo_name],
                                                 'NASBoost' if not args.study else all_algs_mapping[compression_method]),
                          color=color)
             ax1.plot(np.arange(args.first, args.last + 1), result_mean[args.first - 1:args.last], '-',
                      color=color)
 
-            ax2.errorbar(np.arange(args.first, args.last + 1, 25), val_result_mean[args.first - 1:args.last:25],
-                         yerr=val_result_std[max(args.first, 10) - 1:args.last:25], fmt='.',
+            ax2.errorbar(np.arange(args.first, args.last + 1, errorbars_num),
+                         val_result_mean[args.first - 1:args.last:errorbars_num],
+                         yerr=val_result_std[max(args.first, 10) - 1:args.last:errorbars_num], fmt='.',
                          label='{} + {}'.format(label_mapping[algo_name],
                                                 'NASBoost' if not args.study else all_algs_mapping[compression_method]),
                          color=color)
@@ -113,7 +121,7 @@ def plot_experiments(args):
         ax1.grid()
         ax2.grid()
         plt.savefig(
-            'plots/{}_{}_{}_{}_{}.png'.format(cfg['figName'], args.dataset, algo_name, 'ablation' if args.study else '',
+            'plots/{}_{}_{}_{}_{}.png'.format(exp_name, args.dataset, algo_name, 'ablation' if args.study else '',
                                               f'query{args.first}to{args.last}'))
 
 
@@ -144,6 +152,7 @@ if __name__ == "__main__":
     parser.add_argument('--last', type=int, default=0, help='last query forx x axis')
     parser.add_argument('--cfg', type=str, default='/home/daniel/naszilla/naszilla/knas_config.yaml',
                         help='path to configuration file')
+    parser.add_argument('--exp_name', type=str, default='', help='If path specified, plot the figures in there')
 
     args = parser.parse_args()
     main(args)

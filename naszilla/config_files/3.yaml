@@ -1,25 +1,25 @@
-iterations: 20
+iterations: 10
 
-distance: 'real'  # Choose: real, lev, adj, path, nasbot
+distance: 'nasbot'  # Choose: real, lev, adj, path, nasbot
 
 threads: 16
 
-compression_method: 'k_means_coreset_orig_dist' # k_means_coreset, k_medoids
+compression_method: 'k_centers_coreset' # k_centers_coreset_geometric, k_medians_coreset, k_means_coreset, k_medoids, uniform
 
 qAutofill: True
 
-global_queries: True
+global_queries: False
 
 manual_schedulers: False
 
-m_c: 2
+m_c: 3
 
 k_means_coreset_args:
     coreset_iteration_sample_size: 1
-    k: 5
+    k: 20
     k_ratio: 0
     sum_to_max: 1
-    median_sample_size: 1
+    median_sample_size: 150
     tau_for_the_sampled_set: null
     tau_for_the_original_set: null
     Replace_in_coreset_sample: 0
@@ -36,7 +36,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'i20_m2_k5_real'
+figName: 'i10_m3_k20_nasbot'
 
 
 
