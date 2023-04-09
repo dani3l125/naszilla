@@ -5,7 +5,7 @@ NTHREADS=4
 datasets=('cifar100' 'ImageNet16-120')
 #datasets=('ImageNet16-120')
 studies=(0)
-exps=(5 6 7)
+exps=(2 3 4)
 #dgxs=('dgx02' 'dgx04' 'dgx06')
 
 for index in 0 1 2; do

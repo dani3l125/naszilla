@@ -2,7 +2,7 @@
 
 TRIALS=9
 NTHREADS=4
-datasets=('cifar10' 'cifar100')
+datasets=('cifar10')
 algos=('evolution')
 #datasets=('ImageNet16-120')
 studies=(0)

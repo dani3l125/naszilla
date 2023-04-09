@@ -3,6 +3,7 @@ from scipy.spatial import distance_matrix
 import matplotlib.pyplot as plt
 from naszilla.coresets.k_means_coreset_via_robust_median import k_means_coreset_via_robust_median
 from sklearn.decomposition import PCA
+import seaborn as sns
 from scipy.spatial import ConvexHull
 
 
@@ -50,9 +51,11 @@ if __name__ == '__main__':
     acc_distances_to_representatives = np.min(acc_dist_matrix[:, coreset_indexes], axis=1)
 
     fig = plt.figure()
-    ax = plt.subplot(111, projection='3d')
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    ax1 = plt.subplot(111, projection='3d')
+    ax2 = plt.subplot()
+    box = ax2.get_position()
+    ax2.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+    sns.displot(acc_distances_to_representatives)
     for i in np.unique(labels):
         points = estimated_points[labels == i, :]
         if points.shape[0] < 3:
@@ -61,18 +64,21 @@ if __name__ == '__main__':
         g = np.round(np.random.rand(), 1)
         b = np.round(np.random.rand(), 1)
         color = np.array([r, g, b])
-        # hull = ConvexHull(points)
+        hull = ConvexHull(points)
         distance_to_representative = np.max(acc_distances_to_representatives[labels == i])
-        ax.scatter(estimated_points[labels == i, 0], estimated_points[labels == i, 1],
+        ax1.scatter(estimated_points[labels == i, 0], estimated_points[labels == i, 1],
                     distance_to_representative * np.ones((np.sum(labels == i))),
                     label="{:.2f}".format(distance_to_representative),
                     s=5, cmap='viridis', c=color)
-        # x_hull = np.append(points[hull.vertices, 0],
-        #                    points[hull.vertices, 0][0])
-        # y_hull = np.append(points[hull.vertices, 1],
-        #                    points[hull.vertices, 1][0])
-        # plt.fill(x_hull, y_hull, alpha=0.3, c=color)
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        ax2.scatter(estimated_points[labels == i, 0], estimated_points[labels == i, 1],
+                    label="{:.2f}".format(distance_to_representative),
+                    s=5, cmap='viridis', c=color)
+        x_hull = np.append(points[hull.vertices, 0],
+                           points[hull.vertices, 0][0])
+        y_hull = np.append(points[hull.vertices, 1],
+                           points[hull.vertices, 1][0])
+        ax2.fill(x_hull, y_hull, alpha=0.3, c=color)
+    # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.show()
 
     # plt.scatter(estimated_points[:,0], estimated_points[:,1])
