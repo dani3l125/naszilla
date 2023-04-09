@@ -9,7 +9,7 @@ studies=(0)
 exps=(2 3 4)
 #dgxs=('dgx02' 'dgx04' 'dgx06')
 
-for index in 0 1 2; do
+for index in 0; do
   for exp in ${exps[@]}; do
     for study in ${studies[@]}; do
       for algo in ${algos[@]}; do
