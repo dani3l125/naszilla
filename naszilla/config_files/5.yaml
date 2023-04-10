@@ -1,4 +1,4 @@
-iterations: 6
+iterations: 4
 
 distance: 'nasbot'  # Choose: real, lev, adj, path, nasbot
 
@@ -16,7 +16,7 @@ m_c: 2
 
 k_means_coreset_args:
     coreset_iteration_sample_size: 1
-    k: 150
+    k: 100
     k_ratio: 0
     sum_to_max: 1
     median_sample_size: 400
@@ -36,7 +36,7 @@ kScheduler:
   last: 1  # can be set to -c: such that mivVal is size/c
   manual: [500, 30, 2]
 
-figName: 'i6_m2_k150_nasbot'
+figName: 'i4_m2_k100_nasbot'
 
 
 

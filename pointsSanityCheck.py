@@ -5,6 +5,8 @@ from naszilla.coresets.k_means_coreset_via_robust_median import k_means_coreset_
 from sklearn.decomposition import PCA
 import seaborn as sns
 from scipy.spatial import ConvexHull
+from matplotlib import colors
+from matplotlib.ticker import PercentFormatter
 
 
 def get_points(dist_matrix, dim):
@@ -50,15 +52,22 @@ if __name__ == '__main__':
     labels = np.argmin(points2coreset_dist_mat, axis=1)
     acc_distances_to_representatives = np.min(acc_dist_matrix[:, coreset_indexes], axis=1)
 
-    fig = plt.figure()
-    ax1 = plt.subplot(111, projection='3d')
-    ax2 = plt.subplot()
-    box = ax2.get_position()
-    ax2.set_position([box.x0, box.y0, box.width * 0.8, box.height])
     sns.displot(acc_distances_to_representatives)
+
+    # fig = plt.figure()
+    ax1 = plt.subplot(311, projection='3d')
+    ax2 = plt.subplot(312, projection='rectilinear')
+    ax3 = plt.subplot(313)
+
+    ax3.yaxis.set_major_formatter(PercentFormatter(xmax=np.max(np.histogram(acc_distances_to_representatives,bins=50)[0])))
+    ax3.set_ylim(.5, 1.)
+    ax3.set_ylim(0, .1)
+    # We can also normalize our inputs by the total number of counts
+    ax3.hist(acc_distances_to_representatives, bins=50, density=True)
+
     for i in np.unique(labels):
         points = estimated_points[labels == i, :]
-        if points.shape[0] < 3:
+        if points.shape[0] <= 3:
             continue
         r = np.round(np.random.rand(), 1)
         g = np.round(np.random.rand(), 1)
